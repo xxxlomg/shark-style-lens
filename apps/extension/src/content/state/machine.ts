@@ -7,13 +7,7 @@
  * 任何状态可回 SELECTING（re-select，含流式中止）；ERROR 可回 SELECTING 或 IDLE（取消）。
  */
 export type UiState =
-  | 'idle'
-  | 'selecting'
-  | 'selected'
-  | 'analyzing'
-  | 'generating'
-  | 'completed'
-  | 'error'
+  'idle' | 'selecting' | 'selected' | 'analyzing' | 'generating' | 'completed' | 'error'
 
 export type UiEvent =
   | { type: 'START_SELECT' }
@@ -31,7 +25,12 @@ const TRANSITIONS: Record<UiState, Partial<Record<UiEvent['type'], UiState>>> = 
   selected: { ANALYZE: 'analyzing', RE_SELECT: 'selecting', CANCEL: 'idle' },
   // 分析/流式中允许 RE_SELECT / CANCEL（中止并回到选择或空闲，配合 PROMPT_CANCEL 中止后端流）
   analyzing: { PROFILE_READY: 'generating', FAIL: 'error', RE_SELECT: 'selecting', CANCEL: 'idle' },
-  generating: { PROMPT_COMPLETE: 'completed', FAIL: 'error', RE_SELECT: 'selecting', CANCEL: 'idle' },
+  generating: {
+    PROMPT_COMPLETE: 'completed',
+    FAIL: 'error',
+    RE_SELECT: 'selecting',
+    CANCEL: 'idle',
+  },
   completed: { RE_SELECT: 'selecting', START_SELECT: 'selecting' },
   error: { RE_SELECT: 'selecting', START_SELECT: 'selecting', CANCEL: 'idle' },
 }
