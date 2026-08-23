@@ -8,6 +8,7 @@ describe('UI state machine (§47)', () => {
     { from: 'selecting', event: { type: 'CANCEL' }, to: 'idle' },
     { from: 'selected', event: { type: 'ANALYZE' }, to: 'analyzing' },
     { from: 'selected', event: { type: 'RE_SELECT' }, to: 'selecting' },
+    { from: 'selected', event: { type: 'CANCEL' }, to: 'idle' },
     { from: 'analyzing', event: { type: 'PROFILE_READY' }, to: 'generating' },
     { from: 'analyzing', event: { type: 'FAIL' }, to: 'error' },
     { from: 'generating', event: { type: 'PROMPT_COMPLETE' }, to: 'completed' },

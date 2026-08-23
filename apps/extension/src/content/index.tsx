@@ -2,7 +2,7 @@ import { createRoot } from 'react-dom/client'
 import { extensionMessageSchema } from '../shared/schemas/messages'
 import { App } from './overlay/App'
 import styles from './overlay/styles.css?inline'
-import { useSelectionStore } from './state/stores'
+import { dispatchUi } from './state/ui-controller'
 
 const HOST_ID = 'stylelens-root'
 
@@ -26,11 +26,11 @@ function mount() {
   createRoot(mountPoint).render(<App />)
 }
 
-// MVP 接线：Popup / 快捷键触发选择模式（Sprint 2 深化选择引擎）
+// Popup / 快捷键 → 进入选择模式（§3.2）
 chrome.runtime.onMessage.addListener((message: unknown) => {
   const parsed = extensionMessageSchema.safeParse(message)
   if (parsed.success && parsed.data.type === 'SELECTION_START') {
-    useSelectionStore.getState().setMode('selecting')
+    dispatchUi({ type: 'START_SELECT' })
   }
 })
 

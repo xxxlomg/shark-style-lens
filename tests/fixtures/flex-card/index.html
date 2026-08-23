@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Flex card fixture</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 0; padding: 32px; background: #f8fafc; }
+      .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+      .card { display: flex; flex-direction: column; gap: 12px; max-width: 360px; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; background: #fff; }
+      .card-row { display: flex; align-items: center; justify-content: space-between; }
+      .badge { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 999px; background: #dcfce7; color: #166534; font-size: 12px; }
+    </style>
+  </head>
+  <body>
+    <h1>Flex Card Fixture</h1>
+    <div class="toolbar">
+      <input placeholder="Search…" style="padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; width: 240px;" />
+      <button style="padding: 8px 16px; border-radius: 8px; border: 0; background: #6366f1; color: #fff;">New</button>
+    </div>
+    <div class="card">
+      <div class="card-row">
+        <span style="font-weight: 600;">Flex Card</span>
+        <span class="badge">Active</span>
+      </div>
+      <p style="margin: 0; color: #475569; font-size: 14px;">Flex layout with gap and alignment.</p>
+      <div class="card-row">
+        <button style="padding: 6px 12px; border-radius: 6px; border: 1px solid #cbd5e1; background: #fff;">Details</button>
+        <button style="padding: 6px 12px; border-radius: 6px; border: 0; background: #6366f1; color: #fff;">Go</button>
+      </div>
+    </div>
+  </body>
+</html>

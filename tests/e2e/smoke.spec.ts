@@ -1,26 +1,16 @@
-import { mkdtempSync, rmSync } from 'node:fs'
-import { tmpdir } from 'node:os'
-import { join, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
-import { chromium, expect, test, type BrowserContext } from '@playwright/test'
-
-const extPath = resolve(fileURLToPath(new URL('../../apps/extension/dist', import.meta.url)))
+import { expect, test, type BrowserContext } from '@playwright/test'
+import { launchExtensionContext, sendToActiveTab, shadowText } from './helpers'
 
 test.describe('StyleLens extension smoke', () => {
   let context: BrowserContext
-  let userDataDir: string
+  let cleanup: () => Promise<void>
 
   test.beforeAll(async () => {
-    userDataDir = mkdtempSync(join(tmpdir(), 'stylelens-e2e-'))
-    context = await chromium.launchPersistentContext(userDataDir, {
-      headless: false,
-      args: [`--disable-extensions-except=${extPath}`, `--load-extension=${extPath}`],
-    })
+    ;({ context, cleanup } = await launchExtensionContext())
   })
 
   test.afterAll(async () => {
-    await context.close()
-    rmSync(userDataDir, { recursive: true, force: true })
+    await cleanup()
   })
 
   test('content script mounts overlay in shadow root without polluting the page', async () => {
@@ -36,31 +26,17 @@ test.describe('StyleLens extension smoke', () => {
     expect(bodyColor).toBe('rgb(17, 17, 17)')
 
     // 插件 UI 渲染了 StyleLens 标识（Shadow Root 内）
-    const chipText = await page.evaluate(() => {
-      const host = document.getElementById('stylelens-root')
-      return host?.shadowRoot?.textContent ?? ''
-    })
-    expect(chipText).toContain('StyleLens')
+    expect(await shadowText(page, 'stylelens-mount')).toContain('StyleLens')
   })
 
   test('SELECTION_START switches overlay to selecting state', async () => {
     const page = await context.newPage()
     await page.goto('/plain-html/')
+    await sendToActiveTab(context, page, { type: 'SELECTION_START' })
 
-    // 通过扩展 Service Worker 向当前活动标签页发送 SELECTION_START（等价于 popup 按钮）
-    const worker = context.serviceWorkers()[0] ?? (await context.waitForEvent('serviceworker'))
-    await worker.evaluate(async () => {
-      const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true })
-      if (tab?.id) await chrome.tabs.sendMessage(tab.id, { type: 'SELECTION_START' })
-    })
-
+    // 进入 selecting 后，角落状态芯片隐藏、hover 层就绪（控制条为空）
     await expect
-      .poll(async () =>
-        page.evaluate(() => {
-          const host = document.getElementById('stylelens-root')
-          return host?.shadowRoot?.textContent ?? ''
-        }),
-      )
-      .toContain('selecting')
+      .poll(async () => shadowText(page, 'stylelens-selection-control'))
+      .toBe('')
   })
 })

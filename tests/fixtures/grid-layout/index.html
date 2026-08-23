@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Grid layout fixture</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 0; padding: 32px; background: #f8fafc; }
+      .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; max-width: 720px; }
+      .tile { border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; background: #fff; }
+      .tile h3 { margin: 0 0 6px; font-size: 15px; }
+      .tile p { margin: 0; color: #64748b; font-size: 13px; }
+    </style>
+  </head>
+  <body>
+    <h1>Grid Layout Fixture</h1>
+    <div class="grid">
+      <div class="tile"><h3>Tile A</h3><p>Grid item with fixed template columns.</p></div>
+      <div class="tile"><h3>Tile B</h3><p>Grid item with fixed template columns.</p></div>
+      <div class="tile"><h3>Tile C</h3><p>Grid item with fixed template columns.</p></div>
+      <div class="tile"><h3>Tile D</h3><p>Second row of the grid.</p></div>
+      <div class="tile"><h3>Tile E</h3><p>Second row of the grid.</p></div>
+      <div class="tile"><h3>Tile F</h3><p>Second row of the grid.</p></div>
+    </div>
+  </body>
+</html>

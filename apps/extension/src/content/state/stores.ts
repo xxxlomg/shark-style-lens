@@ -1,19 +1,27 @@
 import { create } from 'zustand'
+import type { SelectedElement } from '../../shared/schemas/messages'
+import type { UiState } from './machine'
 
 /* SelectionState（§61） */
 export type SelectionMode = 'idle' | 'selecting' | 'locked'
 
 interface SelectionState {
   mode: SelectionMode
-  targetId?: string
+  /** UI 状态机当前状态（§47，由 ui-controller 驱动） */
+  uiState: UiState
+  /** 已锁定的目标元素 */
+  target?: SelectedElement
   setMode: (mode: SelectionMode) => void
-  setTarget: (targetId?: string) => void
+  setTarget: (target?: SelectedElement) => void
+  setUiState: (uiState: UiState) => void
 }
 
 export const useSelectionStore = create<SelectionState>()((set) => ({
   mode: 'idle',
+  uiState: 'idle',
   setMode: (mode) => set({ mode }),
-  setTarget: (targetId) => set({ targetId }),
+  setTarget: (target) => set({ target }),
+  setUiState: (uiState) => set({ uiState }),
 }))
 
 /* AnalysisState（§61） */

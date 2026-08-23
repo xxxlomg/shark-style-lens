@@ -22,7 +22,7 @@ export type UiEvent =
 const TRANSITIONS: Record<UiState, Partial<Record<UiEvent['type'], UiState>>> = {
   idle: { START_SELECT: 'selecting' },
   selecting: { ELEMENT_SELECTED: 'selected', CANCEL: 'idle' },
-  selected: { ANALYZE: 'analyzing', RE_SELECT: 'selecting' },
+  selected: { ANALYZE: 'analyzing', RE_SELECT: 'selecting', CANCEL: 'idle' },
   analyzing: { PROFILE_READY: 'generating', FAIL: 'error' },
   generating: { PROMPT_COMPLETE: 'completed', FAIL: 'error' },
   completed: { RE_SELECT: 'selecting', START_SELECT: 'selecting' },
