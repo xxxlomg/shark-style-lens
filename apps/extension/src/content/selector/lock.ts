@@ -76,6 +76,11 @@ export function clearTarget() {
   useSelectionStore.getState().setTarget(undefined)
 }
 
+/** 中止当前 Prompt 流（Re-select / Esc / 新分析时调用；MESSAGE_PROTOCOL PROMPT_CANCEL） */
+export function cancelActivePrompt() {
+  chrome.runtime.sendMessage({ type: 'PROMPT_CANCEL' }).catch(() => {})
+}
+
 /** 发起分析（本地运行 StyleProfile 引擎，Sprint 3） */
 export function startAnalysis() {
   const target = useSelectionStore.getState().target

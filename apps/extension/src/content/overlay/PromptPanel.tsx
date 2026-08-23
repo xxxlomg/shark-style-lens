@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { getPanelPosition, setPanelPosition } from '../bridge/storage'
-import { clearTarget, startAnalysis } from '../selector/lock'
+import { cancelActivePrompt, clearTarget, startAnalysis } from '../selector/lock'
 import { dispatchUi } from '../state/ui-controller'
 import { useAnalysisStore, useOverlayStore, useSelectionStore } from '../state/stores'
 import { controlPosition } from './SelectionControl'
@@ -131,6 +131,7 @@ export function PromptPanel() {
   const retry = () => {
     if (!target) return
     // error → selecting → selected → analyzing，重新分析并触发 Prompt（§4.3 重试）
+    cancelActivePrompt()
     dispatchUi({ type: 'RE_SELECT' })
     dispatchUi({ type: 'ELEMENT_SELECTED' })
     dispatchUi({ type: 'ANALYZE' })
@@ -138,6 +139,7 @@ export function PromptPanel() {
   }
 
   const cancel = () => {
+    cancelActivePrompt()
     dispatchUi({ type: 'CANCEL' })
     clearTarget()
   }
@@ -238,12 +240,12 @@ export function PromptPanel() {
         <button
           type="button"
           onClick={() => {
+            cancelActivePrompt()
             dispatchUi({ type: 'RE_SELECT' })
             clearTarget()
           }}
-          disabled={!complete && status !== 'error'}
           className={`rounded-md px-2 py-1.5 text-xs font-medium transition-colors ${
-            complete || status === 'error'
+            complete || status === 'error' || status === 'streaming'
               ? 'text-slate-200 hover:bg-white/10'
               : 'cursor-not-allowed text-slate-600'
           }`}

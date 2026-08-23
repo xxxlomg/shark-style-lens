@@ -1,4 +1,4 @@
-import { requestPrompt } from './ai-client'
+import { cancelPrompt, requestPrompt } from './ai-client'
 import { handleMessage } from './message-router'
 import type { StyleProfile } from '../shared/schemas/style-profile'
 
@@ -43,11 +43,15 @@ chrome.commands.onCommand.addListener((command) => {
 })
 
 chrome.runtime.onMessage.addListener((message: unknown, sender, sendResponse) => {
-  if (
-    typeof message === 'object' &&
-    message !== null &&
-    (message as { type?: string }).type === 'STYLE_PROFILE_READY'
-  ) {
+  const msg = message as { type?: string }
+
+  if (msg.type === 'PROMPT_CANCEL') {
+    // 中止当前 tab 的流式请求（Re-select / Esc / 新分析覆盖旧流）
+    const tabId = sender.tab?.id
+    if (tabId != null) cancelPrompt(tabId)
+  }
+
+  if (msg.type === 'STYLE_PROFILE_READY') {
     const payload = (message as { payload: StyleProfile }).payload
     ;(globalThis as Record<string, unknown>).__stylelensLastProfile = payload
     // 编排 AI 请求（MESSAGE_PROTOCOL §5）：Content → Background → services/api → 流回 Content

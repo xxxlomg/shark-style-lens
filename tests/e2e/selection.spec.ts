@@ -196,6 +196,53 @@ test.describe('StyleLens selection (Sprint 2)', () => {
     expect(active.element).toContain('bg-indigo-500')
   })
 
+  test('Re-select clears the previous prompt panel and its residue', async () => {
+    const page = await context.newPage()
+    await openInSelectMode(page, '/plain-html/')
+    const btn = await page.locator('.btn').boundingBox()
+    await page.mouse.click(btn!.x + btn!.width / 2, btn!.y + btn!.height / 2)
+    await expect
+      .poll(async () => shadowText(page, 'stylelens-selection-control'))
+      .toContain('Analyze')
+    await page.evaluate(() => {
+      const host = document.getElementById('stylelens-root')
+      const ctrl = host?.shadowRoot?.getElementById('stylelens-selection-control')
+      const btnEl = Array.from(ctrl?.querySelectorAll('button') ?? []).find((b) => b.textContent === 'Analyze')
+      ;(btnEl as HTMLButtonElement)?.click()
+    })
+    // 等待流式完成
+    await expect
+      .poll(async () => shadowText(page, 'stylelens-prompt-panel'))
+      .toContain('# Recreate This UI Component')
+
+    // 面板底部 Re-select
+    await page.evaluate(() => {
+      const host = document.getElementById('stylelens-root')
+      const panel = host?.shadowRoot?.getElementById('stylelens-prompt-panel')
+      const btn = Array.from(panel?.querySelectorAll('button') ?? []).find((b) =>
+        b.textContent?.includes('Re-select'),
+      )
+      ;(btn as HTMLButtonElement)?.click()
+    })
+
+    // 旧面板必须消失（无残留）
+    await expect
+      .poll(async () =>
+        page.evaluate(() => {
+          const host = document.getElementById('stylelens-root')
+          return host?.shadowRoot?.getElementById('stylelens-prompt-panel') ? 1 : 0
+        }),
+      )
+      .toBe(0)
+
+    // 回到选择态：hover 高亮恢复
+    const h1 = await page.locator('h1').boundingBox()
+    await page.mouse.move(h1!.x + 20, h1!.y + 10)
+    await page.waitForTimeout(120)
+    const outline = await shadowStyle(page, 'stylelens-hover-outline')
+    expect(outline.display).toBe('block')
+  })
+
   test('analysis panel anchors right below the selection control (跟手)', async () => {
     const page = await context.newPage()
     // 清掉历史面板位置，保证本次为首次锚定

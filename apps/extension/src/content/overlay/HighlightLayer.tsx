@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import {
+  cancelActivePrompt,
   clearTarget,
   currentHoverEl,
   lockElement,
@@ -103,6 +104,7 @@ export function HighlightLayer() {
       } else if (mode === 'locked') {
         if (e.key === 'Escape') {
           e.preventDefault()
+          cancelActivePrompt()
           dispatchUi({ type: 'CANCEL' })
           clearTarget()
         } else if (e.key === 'Enter') {

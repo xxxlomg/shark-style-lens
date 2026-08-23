@@ -42,8 +42,21 @@ function parseSseEvent(raw: string): SseEvent | null {
 /**
  * Background → services/api 流式编排（MESSAGE_PROTOCOL §5 / §36）：
  * POST /api/prompt/stream → SSE 消费 → PROMPT_CHUNK 转发到目标 tab。
+ * 支持按 tab 中止（PROMPT_CANCEL，Re-select / 取消时调用）。
  */
+const activeStreams = new Map<number, AbortController>()
+
+export function cancelPrompt(tabId: number) {
+  activeStreams.get(tabId)?.abort()
+}
+
 export async function requestPrompt(profile: StyleProfile, tabId: number): Promise<void> {
+  const controller = new AbortController()
+  activeStreams.set(tabId, controller)
+  const cleanup = () => {
+    if (activeStreams.get(tabId) === controller) activeStreams.delete(tabId)
+  }
+
   const settings = await getSettings()
   const base = settings.apiBaseUrl ?? DEFAULT_API_BASE
   const secret = settings.apiSecret ?? DEFAULT_API_SECRET
@@ -66,13 +79,24 @@ export async function requestPrompt(profile: StyleProfile, tabId: number): Promi
         profile,
         options: { targetFramework: 'agnostic', language: 'en', detail: 'balanced' },
       }),
+      signal: controller.signal,
     })
   } catch (err) {
+    if (controller.signal.aborted) {
+      cleanup()
+      return
+    }
+    cleanup()
     fail('E_BACKEND_UNAVAILABLE', `Backend unreachable (${base}): ${(err as Error)?.message}`)
     return
   }
 
   if (!resp.ok || !resp.body) {
+    if (controller.signal.aborted) {
+      cleanup()
+      return
+    }
+    cleanup()
     const errBody = await resp.json().catch(() => null)
     fail(
       (errBody as { error?: { code?: string } })?.error?.code ?? 'E_BACKEND_UNAVAILABLE',
@@ -100,15 +124,23 @@ export async function requestPrompt(profile: StyleProfile, tabId: number): Promi
           send({ type: 'PROMPT_CHUNK', payload: { text: evt.data.text } })
         } else if (evt.event === 'prompt_complete') {
           send({ type: 'PROMPT_COMPLETE' })
+          cleanup()
           return
         } else if (evt.event === 'prompt_error') {
           fail(evt.data.code ?? 'E_PROVIDER_STREAM_ERROR', evt.data.message ?? 'Provider error')
+          cleanup()
           return
         }
       }
     }
     send({ type: 'PROMPT_COMPLETE' })
   } catch (err) {
+    if (controller.signal.aborted) {
+      // 用户主动取消（Re-select / Esc）—— 静默，不发错误
+      cleanup()
+      return
+    }
     fail('E_SSE_DISCONNECT', `Stream disconnected: ${(err as Error)?.message}`)
   }
+  cleanup()
 }

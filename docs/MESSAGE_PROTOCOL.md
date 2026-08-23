@@ -83,10 +83,11 @@ type ExtensionMessage =
   | { type: "PROMPT_START" }                          // Background → Content：LLM 请求已发出
   | { type: "PROMPT_CHUNK"; payload: { text: string } }     // Background → Content：增量文本
   | { type: "PROMPT_COMPLETE" }                       // Background → Content：流结束
+  | { type: "PROMPT_CANCEL" }                         // Content → Background：中止当前流（Re-select / Esc / 新分析）
   | { type: "ANALYSIS_ERROR"; payload: ErrorPayload }       // 任一方向：失败
 ```
 
-> 取消语义：用户在流式期间 Re-select / 重新 ANALYZE，新的 `ANALYSIS_START` **隐含取消**当前流（Content 侧 AbortController 终止 SSE；Background 侧中止 provider 请求）。MVP 不单独定义 `PROMPT_CANCEL` 消息。
+> 取消语义：用户在流式期间 Re-select / 取消 / 发起新分析，Content 发送 `PROMPT_CANCEL`；Background 用 AbortController 中止对应 tab 的 SSE 请求，后续 chunk 不再转发，旧流终止事件静默丢弃（不触发错误 UI）。UI 侧同时重置分析状态（面板与 Prompt 无残留）。
 
 ### 3.2 Payload 类型
 

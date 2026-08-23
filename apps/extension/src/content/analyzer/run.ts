@@ -2,6 +2,7 @@ import type { SelectedElement } from '../../shared/schemas/messages'
 import { dispatchUi } from '../state/ui-controller'
 import { useAnalysisStore } from '../state/stores'
 import { targetElement } from '../state/target-registry'
+import { cancelActivePrompt } from '../selector/lock'
 import { buildProfile, type BuildOptions } from './profile-builder'
 
 /**
@@ -14,6 +15,8 @@ export async function runAnalysis(target: SelectedElement): Promise<void> {
   analysis.setProgress(5)
   analysis.resetPrompt()
   analysis.setError(undefined)
+  // 新分析覆盖旧流（若上一轮 Prompt 仍在流式）
+  cancelActivePrompt()
 
   const el = targetElement(target.uid)
   if (!el || !el.isConnected) {

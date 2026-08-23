@@ -65,6 +65,7 @@ export const extensionMessageSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('PROMPT_START') }),
   z.object({ type: z.literal('PROMPT_CHUNK'), payload: promptChunkSchema }),
   z.object({ type: z.literal('PROMPT_COMPLETE') }),
+  z.object({ type: z.literal('PROMPT_CANCEL') }),
   z.object({ type: z.literal('ANALYSIS_ERROR'), payload: errorPayloadSchema }),
 ])
 export type ExtensionMessage = z.infer<typeof extensionMessageSchema>

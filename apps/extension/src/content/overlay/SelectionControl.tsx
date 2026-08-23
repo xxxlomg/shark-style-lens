@@ -1,5 +1,5 @@
 import type { SelectedElement } from '../../shared/schemas/messages'
-import { clearTarget, setTargetScope, startAnalysis } from '../selector/lock'
+import { cancelActivePrompt, clearTarget, setTargetScope, startAnalysis } from '../selector/lock'
 import { dispatchUi } from '../state/ui-controller'
 
 /** 控制条定位（§4.2）：目标正下方，viewport clamp。PromptPanel 据此锚定，保证「跟手」 */
@@ -63,6 +63,7 @@ export function SelectionControl({ target }: { target: SelectedElement }) {
         type="button"
         className="rounded-md px-2 py-1 text-xs text-slate-200 hover:bg-white/10"
         onClick={() => {
+          cancelActivePrompt()
           dispatchUi({ type: 'RE_SELECT' })
           clearTarget()
         }}
