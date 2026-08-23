@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { getPanelPosition, setPanelPosition } from '../bridge/storage'
 import { cancelActivePrompt, clearTarget, startAnalysis } from '../selector/lock'
 import { dispatchUi } from '../state/ui-controller'
@@ -28,10 +28,19 @@ export function PromptPanel() {
   const target = useSelectionStore((s) => s.target)
   const setPosition = useOverlayStore((s) => s.setPosition)
 
-  const [pos, setPos] = useState<{ x: number; y: number } | null>(null)
-  const posRef = useRef<{ x: number; y: number } | null>(null)
+  // 渲染前同步计算初始锚定位置（控制条正下方，§58.3 跟手），
+  // 避免面板先出现在 (0,0) 视口左上角再跳位（“从左边闪出”）
+  const initialPos = useMemo(() => {
+    if (!target) return null
+    const ctrl = controlPosition(target)
+    const x = Math.max(8, Math.min(ctrl.left, window.innerWidth - PANEL_W - 8))
+    const y = Math.max(8, Math.min(ctrl.top + 48, window.innerHeight - PANEL_H - 8))
+    return { x, y }
+  }, [target])
+
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(initialPos)
+  const posRef = useRef<{ x: number; y: number } | null>(initialPos)
   const dragRef = useRef<{ dx: number; dy: number } | null>(null)
-  const anchoredRef = useRef(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const followScrollRef = useRef(true)
   const [copied, setCopied] = useState(false)
@@ -41,9 +50,9 @@ export function PromptPanel() {
     setPos(p)
   }
 
-  // 面板首次出现时决定初始位置（Anchored 或恢复记忆位置）
+  // 异步恢复记忆位置（用户曾拖拽过 → Floating）；无记忆则保持初始锚定
   useEffect(() => {
-    if (status === 'idle' || posRef.current) return
+    if (status === 'idle') return
     let cancelled = false
     void (async () => {
       const saved = await getPanelPosition()
@@ -51,15 +60,6 @@ export function PromptPanel() {
       if (saved?.userMoved) {
         applyPos({ x: saved.x, y: saved.y })
         setPosition(saved.x, saved.y, true)
-      } else if (target && !anchoredRef.current) {
-        // 锚定在控制条正下方（§58.3 跟手）：控制条位于目标下方，面板接续其下
-        anchoredRef.current = true
-        const ctrl = controlPosition(target)
-        let x = ctrl.left
-        let y = ctrl.top + 48 // 控制条高度约 40 + 间距
-        x = Math.max(8, Math.min(x, window.innerWidth - PANEL_W - 8))
-        y = Math.max(8, Math.min(y, window.innerHeight - PANEL_H - 8))
-        applyPos({ x, y })
       }
     })()
     return () => {

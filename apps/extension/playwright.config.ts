@@ -20,10 +20,13 @@ export default defineConfig({
     },
     {
       // 非 watch 模式：避免 tsx watch 在 e2e 期间因文件变更重启而挂掉
+      // 强制 mock provider：e2e 断言依赖确定性的 Compiler markdown 输出，
+      // 不受机器上已配置的 DEEPSEEK_API_KEY 影响
       command: 'pnpm --filter @stylelens/api start',
       url: 'http://127.0.0.1:3001/api/health',
       reuseExistingServer: true,
       timeout: 15_000,
+      env: { DEEPSEEK_API_KEY: '' },
     },
   ],
   projects: [
