@@ -1,18 +1,21 @@
-import { useAnalysisStore, useSelectionStore } from '../state/stores'
+import { dispatchUi } from '../state/ui-controller'
 
-/** 空闲态角落状态芯片（非选择/分析时显示） */
+/**
+ * 空闲态状态芯片：不暴露内部状态名（§49.1），显示友好提示；
+ * 点击即进入选择模式（发现入口之一）。
+ */
 export function StatusChip() {
-  const mode = useSelectionStore((s) => s.mode)
-  const status = useAnalysisStore((s) => s.status)
-
   return (
-    <div className="pointer-events-auto fixed right-4 bottom-4 rounded-xl bg-slate-900/90 px-4 py-3 text-white shadow-2xl backdrop-blur">
-      <div className="flex items-center gap-3">
-        <span className="text-sm font-semibold tracking-wide">StyleLens</span>
-        <span className="rounded-full bg-indigo-500/30 px-2 py-0.5 text-xs text-indigo-200">
-          {mode} · {status}
-        </span>
-      </div>
-    </div>
+    <button
+      type="button"
+      onClick={() => dispatchUi({ type: 'START_SELECT' })}
+      className="pointer-events-auto fixed right-4 bottom-4 flex cursor-pointer items-center gap-2 rounded-xl bg-slate-900/90 px-4 py-2.5 text-white shadow-2xl backdrop-blur transition hover:bg-slate-800"
+      title="Start element selection"
+    >
+      <span className="text-sm font-semibold tracking-wide">StyleLens</span>
+      <span className="rounded-full bg-indigo-500/30 px-2 py-0.5 text-[11px] text-indigo-200">
+        Ready · Alt+Shift+S
+      </span>
+    </button>
   )
 }

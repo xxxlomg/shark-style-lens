@@ -148,6 +148,15 @@ export function PromptPanel() {
   const streaming = status === 'streaming'
   const complete = status === 'complete'
   const currentPhaseIdx = PHASES.findIndex((p) => progress <= p.until)
+  const badgeText = analyzing
+    ? 'Analyzing'
+    : streaming
+      ? 'Streaming'
+      : complete
+        ? 'Complete'
+        : status === 'error'
+          ? 'Failed'
+          : status
 
   return (
     <div
@@ -155,7 +164,7 @@ export function PromptPanel() {
       className="pointer-events-auto fixed z-[2147483646] flex flex-col overflow-hidden rounded-xl border border-white/10 bg-slate-900/95 text-white shadow-2xl backdrop-blur"
       style={{ left: pos?.x ?? 0, top: pos?.y ?? 0, width: PANEL_W, height: PANEL_H }}
     >
-      {/* 拖拽把手 */}
+      {/* 拖拽把手 + 关闭 */}
       <div
         id="stylelens-panel-header"
         className="flex cursor-grab items-center justify-between border-b border-white/10 px-4 py-2.5 select-none active:cursor-grabbing"
@@ -164,9 +173,19 @@ export function PromptPanel() {
         onPointerUp={onPointerUp}
       >
         <span className="text-sm font-semibold tracking-wide">StyleLens</span>
-        <span className="rounded-full bg-indigo-500/30 px-2 py-0.5 text-[10px] text-indigo-200">
-          {analyzing ? 'Analyzing' : streaming ? 'Streaming' : complete ? 'Complete' : status}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="rounded-full bg-indigo-500/30 px-2 py-0.5 text-[10px] text-indigo-200">
+            {badgeText}
+          </span>
+          <button
+            type="button"
+            onClick={cancel}
+            className="rounded px-1.5 text-sm leading-none text-slate-400 transition hover:bg-white/10 hover:text-white"
+            title="Close (Esc)"
+          >
+            ✕
+          </button>
+        </div>
       </div>
 
       {/* 内容 */}

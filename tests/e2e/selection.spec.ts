@@ -243,6 +243,61 @@ test.describe('StyleLens selection (Sprint 2)', () => {
     expect(outline.display).toBe('block')
   })
 
+  test('Escape closes the prompt panel after completion (回到 Ready)', async () => {
+    const page = await context.newPage()
+    await openInSelectMode(page, '/plain-html/')
+    const btn = await page.locator('.btn').boundingBox()
+    await page.mouse.click(btn!.x + btn!.width / 2, btn!.y + btn!.height / 2)
+    await page.evaluate(() => {
+      const host = document.getElementById('stylelens-root')
+      const ctrl = host?.shadowRoot?.getElementById('stylelens-selection-control')
+      const btnEl = Array.from(ctrl?.querySelectorAll('button') ?? []).find((b) => b.textContent === 'Analyze')
+      ;(btnEl as HTMLButtonElement)?.click()
+    })
+    await expect
+      .poll(async () => shadowText(page, 'stylelens-prompt-panel'))
+      .toContain('# Recreate This UI Component')
+
+    // Esc 关闭面板（completed → idle）
+    await page.keyboard.press('Escape')
+    await expect
+      .poll(async () =>
+        page.evaluate(() => {
+          const host = document.getElementById('stylelens-root')
+          return host?.shadowRoot?.getElementById('stylelens-prompt-panel') ? 1 : 0
+        }),
+      )
+      .toBe(0)
+    // 回到 Ready 状态芯片（无内部状态名残留）
+    expect(await shadowText(page, 'stylelens-mount')).toContain('Ready')
+  })
+
+  test('status chip shows friendly text and starts selection on click', async () => {
+    const page = await context.newPage()
+    await page.goto('/plain-html/')
+
+    // 不暴露内部状态名（§49.1）：无 "idle"
+    const chip = await shadowText(page, 'stylelens-mount')
+    expect(chip).toContain('Ready')
+    expect(chip).not.toContain('idle')
+    expect(chip).toContain('StyleLens')
+
+    // 点击芯片 → 进入选择模式（hover 层就绪）
+    await page.evaluate(() => {
+      const host = document.getElementById('stylelens-root')
+      const btn = host?.shadowRoot?.querySelector('#stylelens-mount button')
+      ;(btn as HTMLButtonElement)?.click()
+    })
+    await expect
+      .poll(async () => shadowText(page, 'stylelens-selection-control'))
+      .toBe('')
+    const h1 = await page.locator('h1').boundingBox()
+    await page.mouse.move(h1!.x + 20, h1!.y + 10)
+    await page.waitForTimeout(120)
+    const outline = await shadowStyle(page, 'stylelens-hover-outline')
+    expect(outline.display).toBe('block')
+  })
+
   test('analysis panel anchors right below the selection control (跟手)', async () => {
     const page = await context.newPage()
     // 清掉历史面板位置，保证本次为首次锚定

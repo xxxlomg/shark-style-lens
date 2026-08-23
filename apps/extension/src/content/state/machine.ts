@@ -31,7 +31,7 @@ const TRANSITIONS: Record<UiState, Partial<Record<UiEvent['type'], UiState>>> = 
     RE_SELECT: 'selecting',
     CANCEL: 'idle',
   },
-  completed: { RE_SELECT: 'selecting', START_SELECT: 'selecting' },
+  completed: { RE_SELECT: 'selecting', START_SELECT: 'selecting', CANCEL: 'idle' },
   error: { RE_SELECT: 'selecting', START_SELECT: 'selecting', CANCEL: 'idle' },
 }
 
