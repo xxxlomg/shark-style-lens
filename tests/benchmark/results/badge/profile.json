@@ -1,0 +1,577 @@
+{
+  "version": "0.1.0",
+  "target": {
+    "uid": "n-1",
+    "tagName": "span",
+    "classes": [
+      "badge",
+      "green"
+    ],
+    "attributes": {},
+    "childCount": 1,
+    "rect": {
+      "x": 32,
+      "y": 115.67500305175781,
+      "width": 69.5250015258789,
+      "height": 21.200000762939453,
+      "top": 115.67500305175781,
+      "right": 101.5250015258789,
+      "bottom": 136.87500381469727,
+      "left": 32
+    },
+    "selector": "",
+    "isShadowBoundary": false,
+    "insideIframe": false
+  },
+  "context": {
+    "outerLayoutContext": [
+      "div"
+    ],
+    "ancestors": [
+      {
+        "uid": "n-2",
+        "tagName": "div",
+        "classes": [
+          "row"
+        ],
+        "childCount": 3,
+        "rect": {
+          "x": 32,
+          "y": 115.67500305175781,
+          "width": 1216,
+          "height": 21.200000762939453,
+          "top": 115.67500305175781,
+          "right": 1248,
+          "bottom": 136.87500381469727,
+          "left": 32
+        }
+      },
+      {
+        "uid": "n-3",
+        "tagName": "body",
+        "classes": [],
+        "childCount": 2,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 1280,
+          "height": 168.875,
+          "top": 0,
+          "right": 1280,
+          "bottom": 168.875,
+          "left": 0
+        }
+      },
+      {
+        "uid": "n-4",
+        "tagName": "html",
+        "classes": [],
+        "childCount": 3,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 1280,
+          "height": 168.875,
+          "top": 0,
+          "right": 1280,
+          "bottom": 168.875,
+          "left": 0
+        }
+      }
+    ],
+    "siblings": [
+      {
+        "uid": "n-5",
+        "tagName": "span",
+        "classes": [
+          "badge",
+          "blue"
+        ],
+        "childCount": 1,
+        "rect": {
+          "x": 113.5250015258789,
+          "y": 115.67500305175781,
+          "width": 97.13750457763672,
+          "height": 21.200000762939453,
+          "top": 115.67500305175781,
+          "right": 210.66250610351562,
+          "bottom": 136.87500381469727,
+          "left": 113.5250015258789
+        }
+      },
+      {
+        "uid": "n-6",
+        "tagName": "span",
+        "classes": [
+          "badge",
+          "amber"
+        ],
+        "childCount": 1,
+        "rect": {
+          "x": 222.66250610351562,
+          "y": 115.67500305175781,
+          "width": 81.5250015258789,
+          "height": 21.200000762939453,
+          "top": 115.67500305175781,
+          "right": 304.18750762939453,
+          "bottom": 136.87500381469727,
+          "left": 222.66250610351562
+        }
+      }
+    ],
+    "children": [
+      {
+        "uid": "n-7",
+        "tagName": "span",
+        "classes": [
+          "dot"
+        ],
+        "childCount": 0,
+        "rect": {
+          "x": 42,
+          "y": 123.2750015258789,
+          "width": 6,
+          "height": 6,
+          "top": 123.2750015258789,
+          "right": 48,
+          "bottom": 129.2750015258789,
+          "left": 42
+        }
+      }
+    ]
+  },
+  "structure": {
+    "domTree": [
+      {
+        "uid": "n-1",
+        "tagName": "span",
+        "classes": [
+          "badge",
+          "green"
+        ],
+        "attributes": {
+          "class": "badge green"
+        },
+        "childCount": 1,
+        "depth": 0
+      },
+      {
+        "uid": "n-2",
+        "parentUid": "n-3",
+        "tagName": "div",
+        "classes": [
+          "row"
+        ],
+        "attributes": {
+          "class": "row"
+        },
+        "childCount": 3,
+        "depth": -1
+      },
+      {
+        "uid": "n-3",
+        "parentUid": "n-4",
+        "tagName": "body",
+        "classes": [],
+        "attributes": {},
+        "childCount": 2,
+        "depth": -2
+      },
+      {
+        "uid": "n-4",
+        "tagName": "html",
+        "classes": [],
+        "attributes": {
+          "lang": "en"
+        },
+        "childCount": 3,
+        "depth": -3
+      },
+      {
+        "uid": "n-7",
+        "parentUid": "n-1",
+        "tagName": "span",
+        "classes": [
+          "dot"
+        ],
+        "attributes": {
+          "class": "dot"
+        },
+        "textContent": "",
+        "childCount": 0,
+        "depth": 1
+      }
+    ]
+  },
+  "layout": {
+    "display": "flex",
+    "position": "static",
+    "overflow": "visible",
+    "flex": {
+      "direction": "row",
+      "wrap": "nowrap",
+      "justifyContent": "normal",
+      "alignItems": "center",
+      "gap": "6px",
+      "items": [
+        {
+          "flexGrow": 0,
+          "flexShrink": 1,
+          "flexBasis": "auto",
+          "order": 0
+        }
+      ]
+    },
+    "semanticDescription": "The container uses a horizontal flex with center cross-axis alignment with 6px spacing between children."
+  },
+  "spacing": {
+    "margin": {
+      "top": "0px",
+      "right": "0px",
+      "bottom": "0px",
+      "left": "0px"
+    },
+    "padding": {
+      "top": "3px",
+      "right": "10px",
+      "bottom": "3px",
+      "left": "10px"
+    },
+    "gap": "6px",
+    "boxSizing": "content-box",
+    "renderedSize": {
+      "width": 69.5250015258789,
+      "height": 21.200000762939453
+    },
+    "layoutSize": {
+      "width": 70,
+      "height": 21
+    }
+  },
+  "typography": {
+    "fontFamily": "system-ui, sans-serif",
+    "fontFamilySource": "inherited",
+    "fontSize": "12px",
+    "fontWeight": "600",
+    "lineHeight": "normal",
+    "whiteSpace": "normal",
+    "textAlign": "start",
+    "semanticRole": "caption"
+  },
+  "visual": {
+    "color": {
+      "observed": "rgb(22, 101, 52)",
+      "normalized": "#166534"
+    },
+    "background": {
+      "kind": "color",
+      "color": {
+        "observed": "rgb(220, 252, 231)",
+        "normalized": "#dcfce7"
+      },
+      "semanticDescription": "Solid surface"
+    },
+    "radius": {
+      "topLeft": "999px",
+      "topRight": "999px",
+      "bottomRight": "999px",
+      "bottomLeft": "999px",
+      "summary": "999px"
+    },
+    "shadows": [],
+    "pseudoElements": [
+      {
+        "pseudo": "::before",
+        "display": "block",
+        "color": {
+          "observed": "rgb(22, 101, 52)",
+          "normalized": "rgb(22, 101, 52)"
+        }
+      },
+      {
+        "pseudo": "::after",
+        "display": "block",
+        "color": {
+          "observed": "rgb(22, 101, 52)",
+          "normalized": "rgb(22, 101, 52)"
+        }
+      }
+    ]
+  },
+  "assets": [],
+  "responsive": {
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "devicePixelRatio": 1.0000000149011612,
+    "colorScheme": "light",
+    "matchedMediaQueries": [],
+    "rootFontSize": "16px",
+    "themeSummary": "light theme, colored surface"
+  },
+  "states": [
+    {
+      "state": "default",
+      "captured": true
+    }
+  ],
+  "facts": [
+    {
+      "property": "display",
+      "value": "flex",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "position",
+      "value": "static",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "width",
+      "value": "49.525px",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "height",
+      "value": "15.2px",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "padding-top",
+      "value": "3px",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "padding-right",
+      "value": "10px",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "padding-bottom",
+      "value": "3px",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "padding-left",
+      "value": "10px",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "gap",
+      "value": "6px",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "column-gap",
+      "value": "6px",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "row-gap",
+      "value": "6px",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "flex-direction",
+      "value": "row",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "flex-wrap",
+      "value": "nowrap",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "align-items",
+      "value": "center",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "grid-auto-flow",
+      "value": "row",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "font-family",
+      "value": "system-ui, sans-serif",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "font-size",
+      "value": "12px",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "font-weight",
+      "value": "600",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "text-align",
+      "value": "start",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "color",
+      "value": "rgb(22, 101, 52)",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "background-color",
+      "value": "rgb(220, 252, 231)",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "border-top-color",
+      "value": "rgb(22, 101, 52)",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "border-right-color",
+      "value": "rgb(22, 101, 52)",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "border-bottom-color",
+      "value": "rgb(22, 101, 52)",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "border-left-color",
+      "value": "rgb(22, 101, 52)",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "border-top-left-radius",
+      "value": "999px",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "border-top-right-radius",
+      "value": "999px",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "border-bottom-right-radius",
+      "value": "999px",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "border-bottom-left-radius",
+      "value": "999px",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "opacity",
+      "value": "1",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "overflow",
+      "value": "visible",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "visibility",
+      "value": "visible",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "box-sizing",
+      "value": "content-box",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "border-radius",
+      "value": "999px",
+      "source": "css-rule",
+      "confidence": 0.9,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "padding",
+      "value": "3px 10px",
+      "source": "css-rule",
+      "confidence": 0.9,
+      "targetUid": "n-1"
+    }
+  ],
+  "inferences": [
+    {
+      "type": "semantic-role",
+      "conclusion": "The text reads as a \"caption\"",
+      "confidence": 0.7,
+      "reason": [
+        "tag semantics and computed font metrics"
+      ]
+    }
+  ],
+  "warnings": []
+}

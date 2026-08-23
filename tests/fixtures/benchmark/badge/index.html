@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Benchmark: Badge</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 0; padding: 32px; background: #f8fafc; }
+      .row { display: flex; gap: 12px; align-items: center; }
+      .badge {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600;
+      }
+      .badge.green { background: #dcfce7; color: #166534; }
+      .badge.blue { background: #dbeafe; color: #1e40af; }
+      .badge.amber { background: #fef3c7; color: #92400e; }
+      .badge .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    </style>
+  </head>
+  <body>
+    <h1>Badge</h1>
+    <div class="row">
+      <span class="badge green"><span class="dot"></span>Active</span>
+      <span class="badge blue"><span class="dot"></span>Processing</span>
+      <span class="badge amber"><span class="dot"></span>Pending</span>
+    </div>
+  </body>
+</html>

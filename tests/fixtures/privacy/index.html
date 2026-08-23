@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Privacy fixture</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 0; padding: 32px; }
+      .panel { border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; max-width: 360px; }
+      .btn { background: #6366f1; color: #fff; border: 0; border-radius: 8px; padding: 8px 16px; }
+    </style>
+  </head>
+  <body>
+    <h1>Privacy Fixture</h1>
+    <div class="panel">
+      <!-- 敏感内容：email / token / 表单值 —— 均不得出现在 StyleProfile 中 -->
+      <p>Contact: alice.wang@example.com or +1-202-555-0168</p>
+      <p>API: https://api.example.com/v1?token=super-secret-token-12345</p>
+      <input type="password" value="p@ssw0rd!" />
+      <input type="text" value="CreditCard 4111 1111 1111 1111" />
+      <button class="btn" type="button">Save</button>
+    </div>
+  </body>
+</html>

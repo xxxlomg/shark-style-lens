@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Benchmark: Tabs</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 0; padding: 32px; background: #f8fafc; }
+      .tabs { display: flex; gap: 4px; border-bottom: 1px solid #e2e8f0; }
+      .tab {
+        position: relative; padding: 10px 16px; font-size: 14px; color: #64748b;
+        background: transparent; border: 0; cursor: pointer;
+      }
+      .tab.active { color: #6366f1; font-weight: 600; }
+      .tab.active::after {
+        content: ''; position: absolute; left: 8px; right: 8px; bottom: -1px;
+        height: 2px; border-radius: 2px; background: #6366f1;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Tabs</h1>
+    <div class="tabs" role="tablist">
+      <button class="tab active" type="button" role="tab">Overview</button>
+      <button class="tab" type="button" role="tab">Analytics</button>
+      <button class="tab" type="button" role="tab">Settings</button>
+    </div>
+  </body>
+</html>

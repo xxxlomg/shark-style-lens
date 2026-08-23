@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Benchmark: Button</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 0; padding: 32px; background: #f8fafc; }
+      .btn {
+        display: inline-flex; align-items: center; gap: 8px;
+        background: #6366f1; color: #fff; border: 0; border-radius: 8px;
+        padding: 0 16px; height: 40px; font-size: 14px; font-weight: 600; cursor: pointer;
+      }
+      .btn.ghost { background: transparent; color: #6366f1; border: 1px solid #6366f1; }
+    </style>
+  </head>
+  <body>
+    <h1>Button</h1>
+    <button class="btn" type="button">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      Get Started
+    </button>
+    <button class="btn ghost" type="button">Learn More</button>
+  </body>
+</html>

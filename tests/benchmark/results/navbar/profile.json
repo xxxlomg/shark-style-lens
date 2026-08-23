@@ -1,0 +1,469 @@
+{
+  "version": "0.1.0",
+  "target": {
+    "uid": "n-1",
+    "tagName": "a",
+    "classes": [],
+    "attributes": {},
+    "textContent": "Pricing",
+    "childCount": 0,
+    "rect": {
+      "x": 630.875,
+      "y": 21.200000762939453,
+      "width": 45.97500228881836,
+      "height": 17.600000381469727,
+      "top": 21.200000762939453,
+      "right": 676.8500022888184,
+      "bottom": 38.80000114440918,
+      "left": 630.875
+    },
+    "selector": "",
+    "isShadowBoundary": false,
+    "insideIframe": false
+  },
+  "context": {
+    "outerLayoutContext": [
+      "div",
+      "nav"
+    ],
+    "ancestors": [
+      {
+        "uid": "n-2",
+        "tagName": "div",
+        "classes": [
+          "links"
+        ],
+        "childCount": 4,
+        "rect": {
+          "x": 517,
+          "y": 21.200000762939453,
+          "width": 210.22500610351562,
+          "height": 17.600000381469727,
+          "top": 21.200000762939453,
+          "right": 727.2250061035156,
+          "bottom": 38.80000114440918,
+          "left": 517
+        }
+      },
+      {
+        "uid": "n-3",
+        "tagName": "nav",
+        "classes": [],
+        "childCount": 3,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 1280,
+          "height": 60.79999923706055,
+          "top": 0,
+          "right": 1280,
+          "bottom": 60.79999923706055,
+          "left": 0
+        }
+      },
+      {
+        "uid": "n-4",
+        "tagName": "body",
+        "classes": [],
+        "childCount": 2,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 1280,
+          "height": 123.0374984741211,
+          "top": 0,
+          "right": 1280,
+          "bottom": 123.0374984741211,
+          "left": 0
+        }
+      },
+      {
+        "uid": "n-5",
+        "tagName": "html",
+        "classes": [],
+        "childCount": 3,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 1280,
+          "height": 144.47500610351562,
+          "top": 0,
+          "right": 1280,
+          "bottom": 144.47500610351562,
+          "left": 0
+        }
+      }
+    ],
+    "siblings": [
+      {
+        "uid": "n-6",
+        "tagName": "a",
+        "classes": [],
+        "childCount": 0,
+        "rect": {
+          "x": 517,
+          "y": 21.200000762939453,
+          "width": 40.79999923706055,
+          "height": 17.600000381469727,
+          "top": 21.200000762939453,
+          "right": 557.7999992370605,
+          "bottom": 38.80000114440918,
+          "left": 517
+        }
+      },
+      {
+        "uid": "n-7",
+        "tagName": "a",
+        "classes": [],
+        "childCount": 0,
+        "rect": {
+          "x": 577.7999877929688,
+          "y": 21.200000762939453,
+          "width": 33.07500076293945,
+          "height": 17.600000381469727,
+          "top": 21.200000762939453,
+          "right": 610.8749885559082,
+          "bottom": 38.80000114440918,
+          "left": 577.7999877929688
+        }
+      },
+      {
+        "uid": "n-8",
+        "tagName": "a",
+        "classes": [],
+        "childCount": 0,
+        "rect": {
+          "x": 696.8500366210938,
+          "y": 21.200000762939453,
+          "width": 30.375,
+          "height": 17.600000381469727,
+          "top": 21.200000762939453,
+          "right": 727.2250366210938,
+          "bottom": 38.80000114440918,
+          "left": 696.8500366210938
+        }
+      }
+    ],
+    "children": [],
+    "componentBoundary": {
+      "kind": "navigation",
+      "confidence": 0.95,
+      "evidence": [
+        "visual-enclosure",
+        "layout-container",
+        "semantic-tag:nav"
+      ]
+    }
+  },
+  "structure": {
+    "domTree": [
+      {
+        "uid": "n-1",
+        "tagName": "a",
+        "classes": [],
+        "attributes": {
+          "href": "#"
+        },
+        "textContent": "Pricing",
+        "childCount": 0,
+        "depth": 0
+      },
+      {
+        "uid": "n-2",
+        "parentUid": "n-3",
+        "tagName": "div",
+        "classes": [
+          "links"
+        ],
+        "attributes": {
+          "class": "links"
+        },
+        "childCount": 4,
+        "depth": -1
+      },
+      {
+        "uid": "n-3",
+        "parentUid": "n-4",
+        "tagName": "nav",
+        "classes": [],
+        "attributes": {},
+        "childCount": 3,
+        "depth": -2
+      },
+      {
+        "uid": "n-4",
+        "parentUid": "n-5",
+        "tagName": "body",
+        "classes": [],
+        "attributes": {},
+        "childCount": 2,
+        "depth": -3
+      },
+      {
+        "uid": "n-5",
+        "tagName": "html",
+        "classes": [],
+        "attributes": {
+          "lang": "en"
+        },
+        "childCount": 3,
+        "depth": -4
+      }
+    ]
+  },
+  "layout": {
+    "display": "block",
+    "position": "static",
+    "overflow": "visible",
+    "semanticDescription": "The element is static in the document flow."
+  },
+  "spacing": {
+    "margin": {
+      "top": "0px",
+      "right": "0px",
+      "bottom": "0px",
+      "left": "0px"
+    },
+    "padding": {
+      "top": "0px",
+      "right": "0px",
+      "bottom": "0px",
+      "left": "0px"
+    },
+    "boxSizing": "content-box",
+    "renderedSize": {
+      "width": 45.97500228881836,
+      "height": 17.600000381469727
+    },
+    "layoutSize": {
+      "width": 46,
+      "height": 18
+    }
+  },
+  "typography": {
+    "fontFamily": "system-ui, sans-serif",
+    "fontFamilySource": "inherited",
+    "fontSize": "14px",
+    "fontWeight": "400",
+    "lineHeight": "normal",
+    "whiteSpace": "normal",
+    "textAlign": "start",
+    "semanticRole": "action-label"
+  },
+  "visual": {
+    "color": {
+      "observed": "rgb(203, 213, 225)",
+      "normalized": "#cbd5e1"
+    },
+    "background": {
+      "kind": "none"
+    },
+    "shadows": [],
+    "pseudoElements": [
+      {
+        "pseudo": "::before",
+        "display": "inline",
+        "color": {
+          "observed": "rgb(203, 213, 225)",
+          "normalized": "rgb(203, 213, 225)"
+        }
+      },
+      {
+        "pseudo": "::after",
+        "display": "inline",
+        "color": {
+          "observed": "rgb(203, 213, 225)",
+          "normalized": "rgb(203, 213, 225)"
+        }
+      }
+    ]
+  },
+  "assets": [],
+  "responsive": {
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "devicePixelRatio": 1.0000000149011612,
+    "colorScheme": "light",
+    "matchedMediaQueries": [],
+    "rootFontSize": "16px",
+    "themeSummary": "light theme, colored surface"
+  },
+  "states": [
+    {
+      "state": "default",
+      "captured": true
+    }
+  ],
+  "facts": [
+    {
+      "property": "display",
+      "value": "block",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "position",
+      "value": "static",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "width",
+      "value": "45.975px",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "height",
+      "value": "17.6px",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "flex-direction",
+      "value": "row",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "flex-wrap",
+      "value": "nowrap",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "grid-auto-flow",
+      "value": "row",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "font-family",
+      "value": "system-ui, sans-serif",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "font-size",
+      "value": "14px",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "font-weight",
+      "value": "400",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "text-align",
+      "value": "start",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "color",
+      "value": "rgb(203, 213, 225)",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "background-color",
+      "value": "rgba(0, 0, 0, 0)",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "border-top-color",
+      "value": "rgb(203, 213, 225)",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "border-right-color",
+      "value": "rgb(203, 213, 225)",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "border-bottom-color",
+      "value": "rgb(203, 213, 225)",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "border-left-color",
+      "value": "rgb(203, 213, 225)",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "opacity",
+      "value": "1",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "overflow",
+      "value": "visible",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "visibility",
+      "value": "visible",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "box-sizing",
+      "value": "content-box",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    }
+  ],
+  "inferences": [
+    {
+      "type": "component-type",
+      "conclusion": "This element appears to be part of a \"navigation\" component",
+      "confidence": 0.95,
+      "reason": [
+        "visual-enclosure",
+        "layout-container",
+        "semantic-tag:nav"
+      ]
+    },
+    {
+      "type": "semantic-role",
+      "conclusion": "The text reads as a \"action-label\"",
+      "confidence": 0.7,
+      "reason": [
+        "tag semantics and computed font metrics"
+      ]
+    }
+  ],
+  "warnings": []
+}

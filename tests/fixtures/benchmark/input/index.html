@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Benchmark: Input</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 0; padding: 32px; background: #f8fafc; }
+      .field { display: flex; flex-direction: column; gap: 6px; max-width: 280px; }
+      .field label { font-size: 13px; font-weight: 600; color: #334155; }
+      .field input {
+        padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 14px;
+        box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04);
+      }
+      .field input::placeholder { color: #94a3b8; }
+      .field input:focus { outline: 2px solid #6366f1; border-color: transparent; }
+      .hint { font-size: 12px; color: #94a3b8; }
+    </style>
+  </head>
+  <body>
+    <h1>Input</h1>
+    <div class="field">
+      <label for="name">Full name</label>
+      <input id="name" type="text" placeholder="Jane Doe" value="Jane Doe" />
+      <span class="hint">As it appears on your ID.</span>
+    </div>
+  </body>
+</html>

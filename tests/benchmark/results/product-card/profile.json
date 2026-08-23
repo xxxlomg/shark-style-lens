@@ -1,0 +1,522 @@
+{
+  "version": "0.1.0",
+  "target": {
+    "uid": "n-1",
+    "tagName": "div",
+    "classes": [
+      "thumb"
+    ],
+    "attributes": {},
+    "textContent": "",
+    "childCount": 0,
+    "rect": {
+      "x": 48.79999923706055,
+      "y": 132.47500610351562,
+      "width": 206.40000915527344,
+      "height": 120,
+      "top": 132.47500610351562,
+      "right": 255.20000839233398,
+      "bottom": 252.47500610351562,
+      "left": 48.79999923706055
+    },
+    "selector": "",
+    "isShadowBoundary": false,
+    "insideIframe": false
+  },
+  "context": {
+    "outerLayoutContext": [
+      "div",
+      "div"
+    ],
+    "ancestors": [
+      {
+        "uid": "n-2",
+        "tagName": "div",
+        "classes": [
+          "product"
+        ],
+        "childCount": 3,
+        "rect": {
+          "x": 32,
+          "y": 115.67500305175781,
+          "width": 240,
+          "height": 220.40000915527344,
+          "top": 115.67500305175781,
+          "right": 272,
+          "bottom": 336.07501220703125,
+          "left": 32
+        }
+      },
+      {
+        "uid": "n-3",
+        "tagName": "div",
+        "classes": [
+          "grid"
+        ],
+        "childCount": 3,
+        "rect": {
+          "x": 32,
+          "y": 115.67500305175781,
+          "width": 760,
+          "height": 220.40000915527344,
+          "top": 115.67500305175781,
+          "right": 792,
+          "bottom": 336.07501220703125,
+          "left": 32
+        }
+      },
+      {
+        "uid": "n-4",
+        "tagName": "body",
+        "classes": [],
+        "childCount": 2,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 1280,
+          "height": 368.07501220703125,
+          "top": 0,
+          "right": 1280,
+          "bottom": 368.07501220703125,
+          "left": 0
+        }
+      },
+      {
+        "uid": "n-5",
+        "tagName": "html",
+        "classes": [],
+        "childCount": 3,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 1280,
+          "height": 368.07501220703125,
+          "top": 0,
+          "right": 1280,
+          "bottom": 368.07501220703125,
+          "left": 0
+        }
+      }
+    ],
+    "siblings": [
+      {
+        "uid": "n-6",
+        "tagName": "h4",
+        "classes": [],
+        "childCount": 0,
+        "rect": {
+          "x": 48.79999923706055,
+          "y": 262.4750061035156,
+          "width": 206.40000915527344,
+          "height": 19.200000762939453,
+          "top": 262.4750061035156,
+          "right": 255.20000839233398,
+          "bottom": 281.6750068664551,
+          "left": 48.79999923706055
+        }
+      },
+      {
+        "uid": "n-7",
+        "tagName": "div",
+        "classes": [
+          "meta"
+        ],
+        "childCount": 2,
+        "rect": {
+          "x": 48.79999923706055,
+          "y": 291.6750183105469,
+          "width": 206.40000915527344,
+          "height": 27.600000381469727,
+          "top": 291.6750183105469,
+          "right": 255.20000839233398,
+          "bottom": 319.2750186920166,
+          "left": 48.79999923706055
+        }
+      }
+    ],
+    "children": [],
+    "componentBoundary": {
+      "kind": "container",
+      "confidence": 0.95,
+      "evidence": [
+        "visual-enclosure",
+        "border-enclosure",
+        "rounded-surface",
+        "padding-container",
+        "layout-container",
+        "sibling-repetition"
+      ]
+    }
+  },
+  "structure": {
+    "domTree": [
+      {
+        "uid": "n-1",
+        "tagName": "div",
+        "classes": [
+          "thumb"
+        ],
+        "attributes": {
+          "class": "thumb"
+        },
+        "textContent": "",
+        "childCount": 0,
+        "depth": 0
+      },
+      {
+        "uid": "n-2",
+        "parentUid": "n-3",
+        "tagName": "div",
+        "classes": [
+          "product"
+        ],
+        "attributes": {
+          "class": "product"
+        },
+        "childCount": 3,
+        "depth": -1
+      },
+      {
+        "uid": "n-3",
+        "parentUid": "n-4",
+        "tagName": "div",
+        "classes": [
+          "grid"
+        ],
+        "attributes": {
+          "class": "grid"
+        },
+        "childCount": 3,
+        "depth": -2
+      },
+      {
+        "uid": "n-4",
+        "parentUid": "n-5",
+        "tagName": "body",
+        "classes": [],
+        "attributes": {},
+        "childCount": 2,
+        "depth": -3
+      },
+      {
+        "uid": "n-5",
+        "tagName": "html",
+        "classes": [],
+        "attributes": {
+          "lang": "en"
+        },
+        "childCount": 3,
+        "depth": -4
+      }
+    ]
+  },
+  "layout": {
+    "display": "block",
+    "position": "static",
+    "overflow": "visible",
+    "semanticDescription": "The element is static in the document flow."
+  },
+  "spacing": {
+    "margin": {
+      "top": "0px",
+      "right": "0px",
+      "bottom": "0px",
+      "left": "0px"
+    },
+    "padding": {
+      "top": "0px",
+      "right": "0px",
+      "bottom": "0px",
+      "left": "0px"
+    },
+    "boxSizing": "content-box",
+    "renderedSize": {
+      "width": 206.40000915527344,
+      "height": 120
+    },
+    "layoutSize": {
+      "width": 206,
+      "height": 120
+    }
+  },
+  "typography": {
+    "fontFamily": "system-ui, sans-serif",
+    "fontFamilySource": "inherited",
+    "fontSize": "16px",
+    "fontWeight": "400",
+    "lineHeight": "normal",
+    "whiteSpace": "normal",
+    "textAlign": "start",
+    "semanticRole": "body"
+  },
+  "visual": {
+    "color": {
+      "observed": "rgb(0, 0, 0)",
+      "normalized": "#000000"
+    },
+    "background": {
+      "kind": "gradient",
+      "gradient": "linear-gradient(135deg, rgb(224, 231, 255), rgb(199, 210, 254))",
+      "semanticDescription": "Gradient surface"
+    },
+    "radius": {
+      "topLeft": "10px",
+      "topRight": "10px",
+      "bottomRight": "10px",
+      "bottomLeft": "10px",
+      "summary": "10px"
+    },
+    "shadows": [],
+    "pseudoElements": [
+      {
+        "pseudo": "::before",
+        "display": "inline",
+        "color": {
+          "observed": "rgb(0, 0, 0)",
+          "normalized": "rgb(0, 0, 0)"
+        }
+      },
+      {
+        "pseudo": "::after",
+        "display": "inline",
+        "color": {
+          "observed": "rgb(0, 0, 0)",
+          "normalized": "rgb(0, 0, 0)"
+        }
+      }
+    ]
+  },
+  "assets": [],
+  "responsive": {
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "devicePixelRatio": 1.0000000149011612,
+    "colorScheme": "light",
+    "matchedMediaQueries": [],
+    "rootFontSize": "16px",
+    "themeSummary": "light theme, colored surface"
+  },
+  "states": [
+    {
+      "state": "default",
+      "captured": true
+    }
+  ],
+  "facts": [
+    {
+      "property": "display",
+      "value": "block",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "position",
+      "value": "static",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "width",
+      "value": "206.4px",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "height",
+      "value": "120px",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "flex-direction",
+      "value": "row",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "flex-wrap",
+      "value": "nowrap",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "grid-auto-flow",
+      "value": "row",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "font-family",
+      "value": "system-ui, sans-serif",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "font-size",
+      "value": "16px",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "font-weight",
+      "value": "400",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "text-align",
+      "value": "start",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "color",
+      "value": "rgb(0, 0, 0)",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "background-color",
+      "value": "rgba(0, 0, 0, 0)",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "background-image",
+      "value": "linear-gradient(135deg, rgb(224, 231, 255), rgb(199, 210, 254))",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "border-top-color",
+      "value": "rgb(0, 0, 0)",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "border-right-color",
+      "value": "rgb(0, 0, 0)",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "border-bottom-color",
+      "value": "rgb(0, 0, 0)",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "border-left-color",
+      "value": "rgb(0, 0, 0)",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "border-top-left-radius",
+      "value": "10px",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "border-top-right-radius",
+      "value": "10px",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "border-bottom-right-radius",
+      "value": "10px",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "border-bottom-left-radius",
+      "value": "10px",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "opacity",
+      "value": "1",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "overflow",
+      "value": "visible",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "visibility",
+      "value": "visible",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "box-sizing",
+      "value": "content-box",
+      "source": "computed",
+      "confidence": 1,
+      "targetUid": "n-1"
+    },
+    {
+      "property": "border-radius",
+      "value": "10px",
+      "source": "css-rule",
+      "confidence": 0.9,
+      "targetUid": "n-1"
+    }
+  ],
+  "inferences": [
+    {
+      "type": "component-type",
+      "conclusion": "This element appears to be part of a \"container\" component",
+      "confidence": 0.95,
+      "reason": [
+        "visual-enclosure",
+        "border-enclosure",
+        "rounded-surface",
+        "padding-container",
+        "layout-container",
+        "sibling-repetition"
+      ]
+    },
+    {
+      "type": "semantic-role",
+      "conclusion": "The text reads as a \"body\"",
+      "confidence": 0.7,
+      "reason": [
+        "tag semantics and computed font metrics"
+      ]
+    }
+  ],
+  "warnings": []
+}
