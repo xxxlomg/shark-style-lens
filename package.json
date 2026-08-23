@@ -1,0 +1,15 @@
+{
+  "name": "stylelens",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "build": "pnpm --filter @stylelens/extension build",
+    "test": "pnpm -r test",
+    "lint": "pnpm -r lint",
+    "test:e2e": "pnpm --filter @stylelens/extension test:e2e"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.1"
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "StyleLens",
+  "version": "0.1.0",
+  "description": "Select any UI on the web and get a high-fidelity reconstruction prompt for AI coding tools.",
+  "permissions": ["activeTab", "scripting", "storage"],
+  "host_permissions": ["http://127.0.0.1/*", "http://localhost/*"],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "src/popup/index.html",
+    "default_title": "StyleLens — Select UI"
+  },
+  "commands": {
+    "toggle-select": {
+      "suggested_key": { "default": "Alt+Shift+S" },
+      "description": "Start element selection"
+    }
+  }
+}
