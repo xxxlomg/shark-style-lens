@@ -6,10 +6,41 @@ chrome.runtime.onInstalled.addListener(() => {
   console.log('[StyleLens] background installed')
 })
 
-// 调试/测试钩子：记录最近一次 StyleProfile（e2e golden 捕获用）
+// 调试/测试钩子：记录最近一次 StyleProfile / Prompt（e2e golden 捕获用）
 ;(globalThis as Record<string, unknown>).__stylelensLastProfile = null
-// 调试/测试钩子：最近一次生成完成的 Prompt
 ;(globalThis as Record<string, unknown>).__stylelensLastPrompt = null
+
+/**
+ * 向标签页发送 SELECTION_START；若页面未注入 content script
+ * （如扩展安装前已打开的页面），用 scripting 动态注入后重试。
+ */
+async function ensureInjectedAndSend(tabId: number): Promise<boolean> {
+  try {
+    await chrome.tabs.sendMessage(tabId, { type: 'SELECTION_START' })
+    return true
+  } catch {
+    try {
+      await chrome.scripting.executeScript({ target: { tabId }, files: ['content.js'] })
+      await chrome.tabs.sendMessage(tabId, { type: 'SELECTION_START' })
+      return true
+    } catch {
+      return false
+    }
+  }
+}
+
+// 快捷键（§3.2：Alt+Shift+S，manifest commands 可配置）→ 进入选择模式
+chrome.commands.onCommand.addListener((command) => {
+  if (command !== 'toggle-select') return
+  void (async () => {
+    const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true })
+    if (!tab?.id) return
+    const ok = await ensureInjectedAndSend(tab.id)
+    if (!ok) {
+      console.warn('[StyleLens] cannot start selection on this page (chrome:// or blocked by site)')
+    }
+  })()
+})
 
 chrome.runtime.onMessage.addListener((message: unknown, sender, sendResponse) => {
   if (

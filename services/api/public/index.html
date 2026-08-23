@@ -97,9 +97,9 @@
         </div>
         <ol class="ol">
           <li>构建扩展：<code>pnpm --filter @stylelens/extension build</code></li>
-          <li>打开 <code>chrome://extensions</code> → 开启「开发者模式」</li>
-          <li>把上面的按钮拖到该页面（或点击「下载 zip」解压后点「加载已解压的扩展程序」选择 <code>stylelens/</code> 目录）</li>
-          <li>按 <code>Alt+Shift+S</code> 开始选择元素</li>
+          <li>打开 <code>chrome://extensions</code> → 开启右上角「开发者模式」</li>
+          <li>把上面的按钮拖到该页面；或点击「下载 zip」解压后，点「加载已解压的扩展程序」，选择<strong>解压出的文件夹</strong>（文件夹内应直接包含 <code>manifest.json</code>，不要选外层文件夹）</li>
+          <li>按 <code>Alt+Shift+S</code>（或点工具栏图标 → Select Element）开始选择元素；若快捷键无反应，到 <code>chrome://extensions/shortcuts</code> 检查是否与其他扩展冲突</li>
         </ol>
         <p class="note">
           注：Chrome 对拖拽安装有策略限制；若拖拽未生效，请使用「加载已解压的扩展程序」路径。
