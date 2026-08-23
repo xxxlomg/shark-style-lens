@@ -3,22 +3,24 @@ import { getPanelPosition, setPanelPosition } from '../bridge/storage'
 import { useAnalysisStore, useOverlayStore, useSelectionStore } from '../state/stores'
 
 const PANEL_W = 380
-const PANEL_H = 280
+const PANEL_H = 300
 const PHASES = [
-  'Preparing analysis…',
-  'Inspecting structure…',
-  'Understanding layout…',
-  'Collecting styles…',
-  'Building profile…',
+  { key: 'preparing', label: 'Preparing analysis…', until: 15 },
+  { key: 'inspecting-structure', label: 'Inspecting structure…', until: 35 },
+  { key: 'understanding-layout', label: 'Understanding layout…', until: 60 },
+  { key: 'collecting-styles', label: 'Collecting styles…', until: 85 },
+  { key: 'building-profile', label: 'Building profile…', until: 100 },
 ] as const
 
 /**
  * 浮空结果面板（§29 / §58.3）：
  * 初次生成定位在目标附近（Anchored）；用户拖拽后脱离（Floating）并记忆位置。
- * Sprint 4 接入流式 Prompt 渲染。
+ * Sprint 3：展示 StyleProfile 摘要；Sprint 4 接入流式 Prompt。
  */
 export function PromptPanel() {
   const status = useAnalysisStore((s) => s.status)
+  const progress = useAnalysisStore((s) => s.progress)
+  const profile = useAnalysisStore((s) => s.profile)
   const target = useSelectionStore((s) => s.target)
   const setPosition = useOverlayStore((s) => s.setPosition)
 
@@ -86,6 +88,7 @@ export function PromptPanel() {
   }
 
   const analyzing = status === 'analyzing' || status === 'collecting'
+  const currentPhaseIdx = PHASES.findIndex((p) => progress <= p.until)
 
   return (
     <div
@@ -113,25 +116,64 @@ export function PromptPanel() {
           <div>
             <p className="mb-2 text-slate-200">Analyzing component…</p>
             <ul className="space-y-1.5">
-              {PHASES.map((phase) => (
-                <li key={phase} className="flex items-center gap-2 text-xs text-slate-400">
-                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-slate-600" />
-                  {phase}
+              {PHASES.map((phase, idx) => (
+                <li
+                  key={phase.key}
+                  className={`flex items-center gap-2 text-xs ${
+                    idx < currentPhaseIdx ? 'text-indigo-300' : 'text-slate-400'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-1.5 w-1.5 rounded-full ${
+                      idx < currentPhaseIdx ? 'bg-indigo-400' : 'bg-slate-600'
+                    }`}
+                  />
+                  {phase.label}
                 </li>
               ))}
             </ul>
-            <p className="mt-3 text-[11px] text-slate-500">
-              Analyzer engine lands in Sprint 3 · prompt streaming in Sprint 4.
-            </p>
+            <div className="mt-3 h-1 overflow-hidden rounded bg-slate-700">
+              <div
+                className="h-full rounded bg-indigo-500 transition-all"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
           </div>
         )}
-        {!analyzing && (
-          <p className="text-xs text-slate-400">
-            {status === 'complete'
-              ? 'Prompt ready — streaming UI lands in Sprint 4.'
-              : status === 'error'
-                ? 'Analysis failed. Try re-selecting.'
-                : 'Waiting for analysis…'}
+
+        {status === 'complete' && profile && (
+          <div className="space-y-2">
+            <p className="text-xs font-semibold text-indigo-300">StyleProfile ready ✓</p>
+            <div className="rounded-lg bg-white/5 p-2.5 text-xs">
+              <p className="text-slate-300">
+                <span className="text-slate-500">component:</span>{' '}
+                {profile.context.componentBoundary?.kind ?? 'unknown'} ·{' '}
+                <span className="text-slate-500">tag:</span> {profile.target.tagName}
+              </p>
+              <p className="mt-1 text-slate-400">{profile.layout.semanticDescription}</p>
+              <p className="mt-1 text-slate-400">
+                <span className="text-slate-500">typography:</span> {profile.typography.fontSize}{' '}
+                {profile.typography.fontWeight} · {profile.typography.semanticRole}
+              </p>
+              <p className="mt-1 text-slate-400">
+                <span className="text-slate-500">surface:</span>{' '}
+                {profile.visual.background.semanticDescription ?? 'none'}
+                {profile.visual.background.kind === 'color' &&
+                  ` (${profile.visual.background.color?.normalized ?? ''}${profile.visual.background.color?.token ? ` · ${profile.visual.background.color.token}` : ''})`}
+              </p>
+              <p className="mt-1 text-slate-400">
+                <span className="text-slate-500">facts:</span> {profile.facts.length} ·{' '}
+                <span className="text-slate-500">inferences:</span> {profile.inferences.length} ·{' '}
+                <span className="text-slate-500">warnings:</span> {profile.warnings.length}
+              </p>
+            </div>
+            <p className="text-[11px] text-slate-500">Prompt streaming lands in Sprint 4.</p>
+          </div>
+        )}
+
+        {status === 'error' && (
+          <p className="text-xs text-rose-300">
+            Analysis failed. Try re-selecting the element or reloading the page.
           </p>
         )}
       </div>

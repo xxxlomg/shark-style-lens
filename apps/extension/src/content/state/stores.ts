@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import type { StyleProfile } from '../../shared/schemas/style-profile'
 import type { SelectedElement } from '../../shared/schemas/messages'
 import type { UiState } from './machine'
 
@@ -31,8 +32,10 @@ export type AnalysisStatus =
 interface AnalysisState {
   status: AnalysisStatus
   progress: number
+  profile?: StyleProfile
   setStatus: (status: AnalysisStatus) => void
   setProgress: (progress: number) => void
+  setProfile: (profile?: StyleProfile) => void
 }
 
 export const useAnalysisStore = create<AnalysisState>()((set) => ({
@@ -40,6 +43,7 @@ export const useAnalysisStore = create<AnalysisState>()((set) => ({
   progress: 0,
   setStatus: (status) => set({ status }),
   setProgress: (progress) => set({ progress }),
+  setProfile: (profile) => set({ profile }),
 }))
 
 /* OverlayState（§61） */

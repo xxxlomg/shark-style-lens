@@ -21,8 +21,8 @@ export function SelectionControl({ target }: { target: SelectedElement }) {
         type="button"
         className="rounded-md bg-indigo-500 px-3 py-1 text-xs font-semibold hover:bg-indigo-400"
         onClick={() => {
-          startAnalysis()
           dispatchUi({ type: 'ANALYZE' })
+          startAnalysis()
         }}
       >
         Analyze

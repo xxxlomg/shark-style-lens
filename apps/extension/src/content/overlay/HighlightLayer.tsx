@@ -106,8 +106,8 @@ export function HighlightLayer() {
           clearTarget()
         } else if (e.key === 'Enter') {
           e.preventDefault()
-          startAnalysis()
           dispatchUi({ type: 'ANALYZE' })
+          startAnalysis()
         }
       }
     }

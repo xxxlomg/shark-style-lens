@@ -1,5 +1,7 @@
 import type { SelectedElement } from '../../shared/schemas/messages'
 import { useSelectionStore } from '../state/stores'
+import { registerTarget } from '../state/target-registry'
+import { runAnalysis } from '../analyzer/run'
 
 /** 当前 hover 目标（仅在选择模式下有效） */
 export let currentHoverEl: HTMLElement | null = null
@@ -52,6 +54,7 @@ export function lockElement(
     scope,
   }
   useSelectionStore.getState().setTarget(info)
+  registerTarget(info.uid, el)
   chrome.runtime.sendMessage({ type: 'ELEMENT_SELECTED', payload: info }).catch(() => {
     /* background 校验失败等场景静默（UI 状态不受影响） */
   })
@@ -73,14 +76,9 @@ export function clearTarget() {
   useSelectionStore.getState().setTarget(undefined)
 }
 
-/** 发起分析（ANALYSIS_START → 状态机 ANALYZE；Sprint 3 接入真实 Analyzer） */
+/** 发起分析（本地运行 StyleProfile 引擎，Sprint 3） */
 export function startAnalysis() {
   const target = useSelectionStore.getState().target
   if (!target) return
-  const payload = {
-    targetUid: target.uid,
-    scope: target.scope,
-    options: { includePseudoElements: true },
-  }
-  chrome.runtime.sendMessage({ type: 'ANALYSIS_START', payload }).catch(() => {})
+  void runAnalysis(target)
 }

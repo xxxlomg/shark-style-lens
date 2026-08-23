@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Cross-origin stylesheet fixture</title>
+    <!-- 跨域 stylesheet：浏览器安全策略限制 CSSOM 访问（§8.2 / §41 降级场景） -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/modern-normalize@2.0.0/modern-normalize.min.css" />
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 0; padding: 24px; }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        background: #10b981;
+        color: #fff;
+        border: 0;
+        border-radius: 8px;
+        padding: 0 16px;
+        height: 40px;
+        font-weight: 600;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Cross-Origin Fixture</h1>
+    <button class="btn" type="button">Green Action</button>
+  </body>
+</html>
