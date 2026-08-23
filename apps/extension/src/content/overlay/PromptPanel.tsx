@@ -3,6 +3,7 @@ import { getPanelPosition, setPanelPosition } from '../bridge/storage'
 import { clearTarget, startAnalysis } from '../selector/lock'
 import { dispatchUi } from '../state/ui-controller'
 import { useAnalysisStore, useOverlayStore, useSelectionStore } from '../state/stores'
+import { controlPosition } from './SelectionControl'
 
 const PANEL_W = 380
 const PANEL_H = 320
@@ -16,8 +17,8 @@ const PHASES = [
 
 /**
  * 浮空结果面板（§29 / §58.3 / §64）：
- * 初次生成定位在目标附近（Anchored）；拖拽后脱离（Floating）并记忆位置。
- * Sprint 4：流式 Prompt 渲染 + 自动滚动 + Copy + 错误重试。
+ * 初次生成锚定在控制条正下方（视觉连续、跟手）；拖拽后脱离（Floating）并记忆位置。
+ * Sprint 4：流式 Prompt 渲染 + 自动滚动 + Copy + 错误重试 + Re-select。
  */
 export function PromptPanel() {
   const status = useAnalysisStore((s) => s.status)
@@ -51,9 +52,11 @@ export function PromptPanel() {
         applyPos({ x: saved.x, y: saved.y })
         setPosition(saved.x, saved.y, true)
       } else if (target && !anchoredRef.current) {
+        // 锚定在控制条正下方（§58.3 跟手）：控制条位于目标下方，面板接续其下
         anchoredRef.current = true
-        let x = target.rect.right + 16
-        let y = target.rect.top
+        const ctrl = controlPosition(target)
+        let x = ctrl.left
+        let y = ctrl.top + 48 // 控制条高度约 40 + 间距
         x = Math.max(8, Math.min(x, window.innerWidth - PANEL_W - 8))
         y = Math.max(8, Math.min(y, window.innerHeight - PANEL_H - 8))
         applyPos({ x, y })
@@ -230,13 +233,28 @@ export function PromptPanel() {
         </div>
       )}
 
-      {/* 底部 Copy（§64.2：完成后启用，轻量反馈） */}
-      <div className="border-t border-white/10 px-4 py-2.5">
+      {/* 底部：Re-select（完成后可返回选择） + Copy（§64.2） */}
+      <div className="flex items-center gap-2 border-t border-white/10 px-4 py-2.5">
+        <button
+          type="button"
+          onClick={() => {
+            dispatchUi({ type: 'RE_SELECT' })
+            clearTarget()
+          }}
+          disabled={!complete && status !== 'error'}
+          className={`rounded-md px-2 py-1.5 text-xs font-medium transition-colors ${
+            complete || status === 'error'
+              ? 'text-slate-200 hover:bg-white/10'
+              : 'cursor-not-allowed text-slate-600'
+          }`}
+        >
+          ↺ Re-select
+        </button>
         <button
           type="button"
           onClick={copyPrompt}
           disabled={!complete}
-          className={`w-full rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
+          className={`flex-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
             complete
               ? copied
                 ? 'bg-emerald-500 text-white'

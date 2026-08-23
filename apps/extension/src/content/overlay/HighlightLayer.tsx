@@ -7,7 +7,7 @@ import {
   startAnalysis,
 } from '../selector/lock'
 import { dispatchUi } from '../state/ui-controller'
-import { useSelectionStore } from '../state/stores'
+import { useAnalysisStore, useSelectionStore } from '../state/stores'
 import { SelectionControl } from './SelectionControl'
 
 /**
@@ -17,6 +17,7 @@ import { SelectionControl } from './SelectionControl'
 export function HighlightLayer() {
   const mode = useSelectionStore((s) => s.mode)
   const target = useSelectionStore((s) => s.target)
+  const status = useAnalysisStore((s) => s.status)
   const outlineRef = useRef<HTMLDivElement>(null)
   const tooltipRef = useRef<HTMLDivElement>(null)
   const rafRef = useRef(0)
@@ -131,8 +132,8 @@ export function HighlightLayer() {
         style={{ display: 'none' }}
         className="pointer-events-none fixed z-[2147483646] max-w-[300px] truncate rounded-md bg-slate-900/90 px-2 py-1 text-xs font-mono text-white"
       />
-      {/* 锁定后的控制 UI（§4.2） */}
-      {mode === 'locked' && target && <SelectionControl target={target} />}
+      {/* 锁定后的控制 UI（§4.2）：分析进行中隐藏，面板接管并锚定在控制条原位置 */}
+      {mode === 'locked' && status === 'idle' && target && <SelectionControl target={target} />}
     </>
   )
 }

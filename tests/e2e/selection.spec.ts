@@ -147,4 +147,97 @@ test.describe('StyleLens selection (Sprint 2)', () => {
     expect(parseFloat(after!.left)).toBeGreaterThan(parseFloat(before!.left))
     expect(parseFloat(after!.top)).toBeGreaterThan(parseFloat(before!.top))
   })
+
+  test('scope segmented control switches Element/Component with visible active state', async () => {
+    const page = await context.newPage()
+    await openInSelectMode(page, '/plain-html/')
+    const btn = await page.locator('.btn').boundingBox()
+    await page.mouse.click(btn!.x + btn!.width / 2, btn!.y + btn!.height / 2)
+    await expect
+      .poll(async () => shadowText(page, 'stylelens-selection-control'))
+      .toContain('Analyze')
+
+    const getActive = () =>
+      page.evaluate(() => {
+        const host = document.getElementById('stylelens-root')
+        const ctrl = host?.shadowRoot?.getElementById('stylelens-selection-control')
+        const btns = Array.from(ctrl?.querySelectorAll('button') ?? [])
+        const seg = btns.filter((b) => b.textContent === 'Element' || b.textContent === 'Component')
+        return {
+          element: seg.find((b) => b.textContent === 'Element')?.className ?? '',
+          component: seg.find((b) => b.textContent === 'Component')?.className ?? '',
+        }
+      })
+
+    // 初始：Element 高亮
+    let active = await getActive()
+    expect(active.element).toContain('bg-indigo-500')
+    expect(active.component).not.toContain('bg-indigo-500')
+
+    // 点击 Component → 高亮切换
+    await page.evaluate(() => {
+      const host = document.getElementById('stylelens-root')
+      const ctrl = host?.shadowRoot?.getElementById('stylelens-selection-control')
+      const btn = Array.from(ctrl?.querySelectorAll('button') ?? []).find((b) => b.textContent === 'Component')
+      ;(btn as HTMLButtonElement)?.click()
+    })
+    active = await getActive()
+    expect(active.element).not.toContain('bg-indigo-500')
+    expect(active.component).toContain('bg-indigo-500')
+
+    // 切回 Element
+    await page.evaluate(() => {
+      const host = document.getElementById('stylelens-root')
+      const ctrl = host?.shadowRoot?.getElementById('stylelens-selection-control')
+      const btn = Array.from(ctrl?.querySelectorAll('button') ?? []).find((b) => b.textContent === 'Element')
+      ;(btn as HTMLButtonElement)?.click()
+    })
+    active = await getActive()
+    expect(active.element).toContain('bg-indigo-500')
+  })
+
+  test('analysis panel anchors right below the selection control (跟手)', async () => {
+    const page = await context.newPage()
+    // 清掉历史面板位置，保证本次为首次锚定
+    const worker = context.serviceWorkers()[0]
+    await worker!.evaluate(() => chrome.storage.local.remove('stylelens.panelPosition'))
+
+    await openInSelectMode(page, '/plain-html/')
+    const btn = await page.locator('.btn').boundingBox()
+    await page.mouse.click(btn!.x + btn!.width / 2, btn!.y + btn!.height / 2)
+    await expect
+      .poll(async () => shadowText(page, 'stylelens-selection-control'))
+      .toContain('Analyze')
+
+    const ctrlBox = await page.evaluate(() => {
+      const host = document.getElementById('stylelens-root')
+      const el = host?.shadowRoot?.getElementById('stylelens-selection-control')
+      if (!el) return null
+      const r = el.getBoundingClientRect()
+      return { left: r.left, top: r.top }
+    })
+    expect(ctrlBox).not.toBeNull()
+
+    await page.evaluate(() => {
+      const host = document.getElementById('stylelens-root')
+      const ctrl = host?.shadowRoot?.getElementById('stylelens-selection-control')
+      const btnEl = Array.from(ctrl?.querySelectorAll('button') ?? []).find((b) => b.textContent === 'Analyze')
+      ;(btnEl as HTMLButtonElement)?.click()
+    })
+    await expect
+      .poll(async () => shadowText(page, 'stylelens-prompt-panel'))
+      .toContain('# Recreate This UI Component')
+
+    const panelBox = await page.evaluate(() => {
+      const host = document.getElementById('stylelens-root')
+      const el = host?.shadowRoot?.getElementById('stylelens-prompt-panel')
+      if (!el) return null
+      const r = el.getBoundingClientRect()
+      return { left: r.left, top: r.top }
+    })
+    expect(panelBox).not.toBeNull()
+    // 面板顶 ≈ 控制条顶 + 48（控制条高度 ~40 + 间距）；左缘对齐控制条
+    expect(Math.abs(panelBox!.top - (ctrlBox!.top + 48))).toBeLessThanOrEqual(4)
+    expect(Math.abs(panelBox!.left - ctrlBox!.left)).toBeLessThanOrEqual(4)
+  })
 })

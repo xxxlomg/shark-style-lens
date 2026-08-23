@@ -1,1 +1,24 @@
 @import 'tailwindcss';
+
+/* ---------- Shadow DOM 内细滚动条（与面板深色背景融合，§29.1） ---------- */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.35) transparent;
+}
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.35);
+  border-radius: 999px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.6);
+}
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}

@@ -19,7 +19,8 @@ export default defineConfig({
       timeout: 10_000,
     },
     {
-      command: 'pnpm --filter @stylelens/api dev',
+      // 非 watch 模式：避免 tsx watch 在 e2e 期间因文件变更重启而挂掉
+      command: 'pnpm --filter @stylelens/api start',
       url: 'http://127.0.0.1:3001/api/health',
       reuseExistingServer: true,
       timeout: 15_000,
