@@ -12,6 +12,8 @@ export async function runAnalysis(target: SelectedElement): Promise<void> {
   const analysis = useAnalysisStore.getState()
   analysis.setStatus('analyzing')
   analysis.setProgress(5)
+  analysis.resetPrompt()
+  analysis.setError(undefined)
 
   const el = targetElement(target.uid)
   if (!el || !el.isConnected) {
@@ -31,11 +33,9 @@ export async function runAnalysis(target: SelectedElement): Promise<void> {
     analysis.setProfile(profile)
     analysis.setProgress(100)
 
-    // 上报 background（Sprint 4 用于 AI 请求编排）；UI 本地已完成
+    // 上报 background 编排 AI 请求（Sprint 4：SSE 流式 → PROMPT_CHUNK 回流）
     chrome.runtime.sendMessage({ type: 'STYLE_PROFILE_READY', payload: profile }).catch(() => {})
-    // Sprint 3：无真实 Prompt，分析完成后直接进入 completed 态（Sprint 4 改为流式结束触发）
-    dispatchUi({ type: 'PROFILE_READY' })
-    dispatchUi({ type: 'PROMPT_COMPLETE' })
+    dispatchUi({ type: 'PROFILE_READY' }) // analyzing → generating（streaming）
   } catch (err) {
     console.error('[StyleLens] analysis failed', err)
     dispatchUi({ type: 'FAIL' })

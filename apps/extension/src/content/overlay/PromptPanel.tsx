@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { getPanelPosition, setPanelPosition } from '../bridge/storage'
+import { clearTarget, startAnalysis } from '../selector/lock'
+import { dispatchUi } from '../state/ui-controller'
 import { useAnalysisStore, useOverlayStore, useSelectionStore } from '../state/stores'
 
 const PANEL_W = 380
-const PANEL_H = 300
+const PANEL_H = 320
 const PHASES = [
   { key: 'preparing', label: 'Preparing analysis…', until: 15 },
   { key: 'inspecting-structure', label: 'Inspecting structure…', until: 35 },
@@ -13,14 +15,15 @@ const PHASES = [
 ] as const
 
 /**
- * 浮空结果面板（§29 / §58.3）：
- * 初次生成定位在目标附近（Anchored）；用户拖拽后脱离（Floating）并记忆位置。
- * Sprint 3：展示 StyleProfile 摘要；Sprint 4 接入流式 Prompt。
+ * 浮空结果面板（§29 / §58.3 / §64）：
+ * 初次生成定位在目标附近（Anchored）；拖拽后脱离（Floating）并记忆位置。
+ * Sprint 4：流式 Prompt 渲染 + 自动滚动 + Copy + 错误重试。
  */
 export function PromptPanel() {
   const status = useAnalysisStore((s) => s.status)
   const progress = useAnalysisStore((s) => s.progress)
-  const profile = useAnalysisStore((s) => s.profile)
+  const prompt = useAnalysisStore((s) => s.prompt)
+  const error = useAnalysisStore((s) => s.error)
   const target = useSelectionStore((s) => s.target)
   const setPosition = useOverlayStore((s) => s.setPosition)
 
@@ -28,6 +31,9 @@ export function PromptPanel() {
   const posRef = useRef<{ x: number; y: number } | null>(null)
   const dragRef = useRef<{ dx: number; dy: number } | null>(null)
   const anchoredRef = useRef(false)
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const followScrollRef = useRef(true)
+  const [copied, setCopied] = useState(false)
 
   const applyPos = (p: { x: number; y: number }) => {
     posRef.current = p
@@ -59,6 +65,20 @@ export function PromptPanel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status])
 
+  // 流式自动滚动（§64.1：用户上滚后停止强制滚动）
+  useEffect(() => {
+    const el = scrollRef.current
+    if (el && followScrollRef.current) {
+      el.scrollTop = el.scrollHeight
+    }
+  }, [prompt, status])
+
+  const onScroll = () => {
+    const el = scrollRef.current
+    if (!el) return
+    followScrollRef.current = el.scrollTop + el.clientHeight >= el.scrollHeight - 30
+  }
+
   const onPointerDown = (e: React.PointerEvent<HTMLElement>) => {
     if ((e.target as HTMLElement).closest('button')) return
     const p = posRef.current
@@ -87,7 +107,41 @@ export function PromptPanel() {
     }
   }
 
+  const copyPrompt = async () => {
+    try {
+      await navigator.clipboard.writeText(prompt)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    } catch {
+      // 降级：textarea 复制
+      const ta = document.createElement('textarea')
+      ta.value = prompt
+      document.body.appendChild(ta)
+      ta.select()
+      document.execCommand('copy')
+      ta.remove()
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    }
+  }
+
+  const retry = () => {
+    if (!target) return
+    // error → selecting → selected → analyzing，重新分析并触发 Prompt（§4.3 重试）
+    dispatchUi({ type: 'RE_SELECT' })
+    dispatchUi({ type: 'ELEMENT_SELECTED' })
+    dispatchUi({ type: 'ANALYZE' })
+    startAnalysis()
+  }
+
+  const cancel = () => {
+    dispatchUi({ type: 'CANCEL' })
+    clearTarget()
+  }
+
   const analyzing = status === 'analyzing' || status === 'collecting'
+  const streaming = status === 'streaming'
+  const complete = status === 'complete'
   const currentPhaseIdx = PHASES.findIndex((p) => progress <= p.until)
 
   return (
@@ -106,86 +160,91 @@ export function PromptPanel() {
       >
         <span className="text-sm font-semibold tracking-wide">StyleLens</span>
         <span className="rounded-full bg-indigo-500/30 px-2 py-0.5 text-[10px] text-indigo-200">
-          {analyzing ? 'Analyzing' : status}
+          {analyzing ? 'Analyzing' : streaming ? 'Streaming' : complete ? 'Complete' : status}
         </span>
       </div>
 
       {/* 内容 */}
-      <div className="flex-1 overflow-y-auto px-4 py-3 text-sm">
-        {analyzing && (
-          <div>
-            <p className="mb-2 text-slate-200">Analyzing component…</p>
-            <ul className="space-y-1.5">
-              {PHASES.map((phase, idx) => (
-                <li
-                  key={phase.key}
-                  className={`flex items-center gap-2 text-xs ${
-                    idx < currentPhaseIdx ? 'text-indigo-300' : 'text-slate-400'
+      {analyzing && (
+        <div className="flex-1 overflow-y-auto px-4 py-3 text-sm">
+          <p className="mb-2 text-slate-200">Analyzing component…</p>
+          <ul className="space-y-1.5">
+            {PHASES.map((phase, idx) => (
+              <li
+                key={phase.key}
+                className={`flex items-center gap-2 text-xs ${
+                  idx < currentPhaseIdx ? 'text-indigo-300' : 'text-slate-400'
+                }`}
+              >
+                <span
+                  className={`inline-block h-1.5 w-1.5 rounded-full ${
+                    idx < currentPhaseIdx ? 'bg-indigo-400' : 'bg-slate-600'
                   }`}
-                >
-                  <span
-                    className={`inline-block h-1.5 w-1.5 rounded-full ${
-                      idx < currentPhaseIdx ? 'bg-indigo-400' : 'bg-slate-600'
-                    }`}
-                  />
-                  {phase.label}
-                </li>
-              ))}
-            </ul>
-            <div className="mt-3 h-1 overflow-hidden rounded bg-slate-700">
-              <div
-                className="h-full rounded bg-indigo-500 transition-all"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
+                />
+                {phase.label}
+              </li>
+            ))}
+          </ul>
+          <div className="mt-3 h-1 overflow-hidden rounded bg-slate-700">
+            <div
+              className="h-full rounded bg-indigo-500 transition-all"
+              style={{ width: `${progress}%` }}
+            />
           </div>
-        )}
+        </div>
+      )}
 
-        {status === 'complete' && profile && (
-          <div className="space-y-2">
-            <p className="text-xs font-semibold text-indigo-300">StyleProfile ready ✓</p>
-            <div className="rounded-lg bg-white/5 p-2.5 text-xs">
-              <p className="text-slate-300">
-                <span className="text-slate-500">component:</span>{' '}
-                {profile.context.componentBoundary?.kind ?? 'unknown'} ·{' '}
-                <span className="text-slate-500">tag:</span> {profile.target.tagName}
-              </p>
-              <p className="mt-1 text-slate-400">{profile.layout.semanticDescription}</p>
-              <p className="mt-1 text-slate-400">
-                <span className="text-slate-500">typography:</span> {profile.typography.fontSize}{' '}
-                {profile.typography.fontWeight} · {profile.typography.semanticRole}
-              </p>
-              <p className="mt-1 text-slate-400">
-                <span className="text-slate-500">surface:</span>{' '}
-                {profile.visual.background.semanticDescription ?? 'none'}
-                {profile.visual.background.kind === 'color' &&
-                  ` (${profile.visual.background.color?.normalized ?? ''}${profile.visual.background.color?.token ? ` · ${profile.visual.background.color.token}` : ''})`}
-              </p>
-              <p className="mt-1 text-slate-400">
-                <span className="text-slate-500">facts:</span> {profile.facts.length} ·{' '}
-                <span className="text-slate-500">inferences:</span> {profile.inferences.length} ·{' '}
-                <span className="text-slate-500">warnings:</span> {profile.warnings.length}
-              </p>
-            </div>
-            <p className="text-[11px] text-slate-500">Prompt streaming lands in Sprint 4.</p>
+      {(streaming || complete) && (
+        <div
+          ref={scrollRef}
+          onScroll={onScroll}
+          className="flex-1 overflow-y-auto px-4 py-3 text-xs leading-relaxed whitespace-pre-wrap"
+        >
+          {prompt.length === 0 && <p className="text-slate-400">Generating prompt…</p>}
+          <span className="font-mono text-slate-200">{prompt}</span>
+          {streaming && (
+            <span className="ml-0.5 inline-block h-3 w-1.5 animate-pulse bg-indigo-400" />
+          )}
+        </div>
+      )}
+
+      {status === 'error' && (
+        <div className="flex-1 px-4 py-3 text-xs">
+          <p className="mb-2 text-rose-300">⚠ {error ?? 'Analysis failed'}</p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={retry}
+              className="rounded-md bg-indigo-500 px-3 py-1 text-xs font-semibold hover:bg-indigo-400"
+            >
+              Retry
+            </button>
+            <button
+              type="button"
+              onClick={cancel}
+              className="rounded-md px-2 py-1 text-xs text-slate-300 hover:bg-white/10"
+            >
+              Cancel
+            </button>
           </div>
-        )}
+        </div>
+      )}
 
-        {status === 'error' && (
-          <p className="text-xs text-rose-300">
-            Analysis failed. Try re-selecting the element or reloading the page.
-          </p>
-        )}
-      </div>
-
-      {/* 底部 Copy（Sprint 4 启用） */}
+      {/* 底部 Copy（§64.2：完成后启用，轻量反馈） */}
       <div className="border-t border-white/10 px-4 py-2.5">
         <button
           type="button"
-          disabled
-          className="w-full cursor-not-allowed rounded-md bg-indigo-500/40 px-3 py-1.5 text-xs font-semibold text-indigo-200"
+          onClick={copyPrompt}
+          disabled={!complete}
+          className={`w-full rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
+            complete
+              ? copied
+                ? 'bg-emerald-500 text-white'
+                : 'bg-indigo-500 text-white hover:bg-indigo-400'
+              : 'cursor-not-allowed bg-indigo-500/40 text-indigo-200'
+          }`}
         >
-          Copy Prompt
+          {copied ? 'Copied ✓' : 'Copy Prompt'}
         </button>
       </div>
     </div>

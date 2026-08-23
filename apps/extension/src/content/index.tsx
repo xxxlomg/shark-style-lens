@@ -3,6 +3,7 @@ import { extensionMessageSchema } from '../shared/schemas/messages'
 import { App } from './overlay/App'
 import styles from './overlay/styles.css?inline'
 import { dispatchUi } from './state/ui-controller'
+import { useAnalysisStore } from './state/stores'
 
 const HOST_ID = 'stylelens-root'
 
@@ -26,11 +27,29 @@ function mount() {
   createRoot(mountPoint).render(<App />)
 }
 
-// Popup / 快捷键 → 进入选择模式（§3.2）
+// 消息路由（§3.1）：SELECTION_START（Popup/快捷键）+ Prompt 流回执
 chrome.runtime.onMessage.addListener((message: unknown) => {
   const parsed = extensionMessageSchema.safeParse(message)
-  if (parsed.success && parsed.data.type === 'SELECTION_START') {
-    dispatchUi({ type: 'START_SELECT' })
+  if (!parsed.success) return
+  const { type } = parsed.data
+
+  switch (type) {
+    case 'SELECTION_START':
+      dispatchUi({ type: 'START_SELECT' })
+      break
+    case 'PROMPT_START':
+      useAnalysisStore.getState().setStatus('streaming')
+      break
+    case 'PROMPT_CHUNK':
+      useAnalysisStore.getState().appendPrompt(parsed.data.payload.text)
+      break
+    case 'PROMPT_COMPLETE':
+      dispatchUi({ type: 'PROMPT_COMPLETE' })
+      break
+    case 'ANALYSIS_ERROR':
+      useAnalysisStore.getState().setError(parsed.data.payload.message)
+      dispatchUi({ type: 'FAIL' })
+      break
   }
 })
 

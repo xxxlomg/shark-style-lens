@@ -55,7 +55,7 @@ test.describe('StyleLens selection (Sprint 2)', () => {
     expect(control).toContain('Re-select')
     expect(control).toContain('Component')
 
-    // Analyze → 面板出现并完成分析（Sprint 3：显示 StyleProfile 摘要）
+    // Analyze → 面板出现并流式输出 Prompt（mock 后端）
     await page.evaluate(() => {
       const host = document.getElementById('stylelens-root')
       const ctrl = host?.shadowRoot?.getElementById('stylelens-selection-control')
@@ -64,7 +64,7 @@ test.describe('StyleLens selection (Sprint 2)', () => {
     })
     await expect
       .poll(async () => shadowText(page, 'stylelens-prompt-panel'))
-      .toContain('StyleProfile ready')
+      .toContain('# Recreate This UI Component')
   })
 
   test('Esc cancels selection; Re-select returns to selecting', async () => {
@@ -116,7 +116,7 @@ test.describe('StyleLens selection (Sprint 2)', () => {
     })
     await expect
       .poll(async () => shadowText(page, 'stylelens-prompt-panel'))
-      .toContain('StyleProfile ready')
+      .toContain('# Recreate This UI Component')
 
     const before = await page.evaluate(() => {
       const host = document.getElementById('stylelens-root')

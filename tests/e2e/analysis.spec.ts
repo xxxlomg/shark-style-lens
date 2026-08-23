@@ -14,6 +14,7 @@ test.describe('StyleLens analysis (Sprint 3)', () => {
 
   test.beforeAll(async () => {
     ;({ context, cleanup } = await launchExtensionContext())
+    await context.grantPermissions(['clipboard-read', 'clipboard-write'])
   })
 
   test.afterAll(async () => {
@@ -34,7 +35,7 @@ test.describe('StyleLens analysis (Sprint 3)', () => {
     })
     await expect
       .poll(async () => shadowText(page, 'stylelens-prompt-panel'))
-      .toContain('StyleProfile ready')
+      .toContain('# Recreate This UI Component')
   }
 
   async function lastProfile(): Promise<Record<string, unknown>> {
@@ -75,6 +76,43 @@ test.describe('StyleLens analysis (Sprint 3)', () => {
       expect(profile.layout).toEqual(golden.layout)
       expect(profile.visual).toEqual(golden.visual)
     }
+  })
+
+  test('streams a prompt end-to-end and copies it (Sprint 4, mock backend)', async () => {
+    const page = await context.newPage()
+    await selectAndAnalyze(page, '/plain-html/', '.btn')
+
+    // mock provider 流式输出 Compiler 渲染的 §25 markdown
+    await expect
+      .poll(async () => shadowText(page, 'stylelens-prompt-panel'))
+      .toContain('# Recreate This UI Component')
+
+    // Copy 按钮启用 → 点击 → 轻量反馈（§64.2）
+    await expect
+      .poll(async () =>
+        page.evaluate(() => {
+          const host = document.getElementById('stylelens-root')
+          const panel = host?.shadowRoot?.getElementById('stylelens-prompt-panel')
+          const btn = Array.from(panel?.querySelectorAll('button') ?? []).find((b) =>
+            b.textContent?.includes('Copy'),
+          )
+          return btn ? !(btn as HTMLButtonElement).disabled : false
+        }),
+      )
+      .toBe(true)
+    await page.evaluate(() => {
+      const host = document.getElementById('stylelens-root')
+      const panel = host?.shadowRoot?.getElementById('stylelens-prompt-panel')
+      const btn = Array.from(panel?.querySelectorAll('button') ?? []).find((b) => b.textContent?.includes('Copy'))
+      ;(btn as HTMLButtonElement)?.click()
+    })
+    await expect
+      .poll(async () => shadowText(page, 'stylelens-prompt-panel'))
+      .toContain('Copied')
+
+    // 剪贴板内容 = 生成的 Prompt
+    const clip = await page.evaluate(() => navigator.clipboard.readText())
+    expect(clip).toContain('# Recreate This UI Component')
   })
 
   test('degrades gracefully on cross-origin stylesheet (CROSS_ORIGIN_CSSOM warning)', async () => {

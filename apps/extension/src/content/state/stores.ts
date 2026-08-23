@@ -33,17 +33,26 @@ interface AnalysisState {
   status: AnalysisStatus
   progress: number
   profile?: StyleProfile
+  prompt: string
+  error?: string
   setStatus: (status: AnalysisStatus) => void
   setProgress: (progress: number) => void
   setProfile: (profile?: StyleProfile) => void
+  appendPrompt: (text: string) => void
+  resetPrompt: () => void
+  setError: (error?: string) => void
 }
 
 export const useAnalysisStore = create<AnalysisState>()((set) => ({
   status: 'idle',
   progress: 0,
+  prompt: '',
   setStatus: (status) => set({ status }),
   setProgress: (progress) => set({ progress }),
   setProfile: (profile) => set({ profile }),
+  appendPrompt: (text) => set((s) => ({ prompt: s.prompt + text })),
+  resetPrompt: () => set({ prompt: '' }),
+  setError: (error) => set({ error }),
 }))
 
 /* OverlayState（§61） */
