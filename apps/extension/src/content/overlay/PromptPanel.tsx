@@ -4,6 +4,7 @@ import { cancelActivePrompt, clearTarget, startAnalysis } from '../selector/lock
 import { dispatchUi } from '../state/ui-controller'
 import { useAnalysisStore, useOverlayStore, useSelectionStore } from '../state/stores'
 import { controlPosition } from './SelectionControl'
+import { BrandMark } from '../../shared/BrandMark'
 
 const PANEL_W = 380
 const PANEL_H = 320
@@ -172,7 +173,10 @@ export function PromptPanel() {
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
       >
-        <span className="text-sm font-semibold tracking-wide">StyleLens</span>
+        <span className="flex items-center gap-2 text-sm font-semibold tracking-wide">
+          <BrandMark className="h-5 w-5 rounded-md" />
+          StyleLens
+        </span>
         <div className="flex items-center gap-2">
           <span className="rounded-full bg-indigo-500/30 px-2 py-0.5 text-[10px] text-indigo-200">
             {badgeText}
@@ -254,8 +258,18 @@ export function PromptPanel() {
         </div>
       )}
 
-      {/* 底部：Re-select（完成后可返回选择） + Copy（§64.2） */}
+      {/* 底部：流式中可立即停止上游请求；完成后可返回选择 + Copy（§64.2） */}
       <div className="flex items-center gap-2 border-t border-white/10 px-4 py-2.5">
+        {(analyzing || streaming) && (
+          <button
+            type="button"
+            onClick={cancel}
+            className="rounded-md bg-rose-500/15 px-2 py-1.5 text-xs font-medium text-rose-200 transition-colors hover:bg-rose-500/25"
+            title="Stop the current AI request"
+          >
+            Stop
+          </button>
+        )}
         <button
           type="button"
           onClick={() => {

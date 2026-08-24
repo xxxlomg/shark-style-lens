@@ -7,6 +7,9 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# 本地产品/工程文档（不入库）
+docs/
+
 node_modules
 dist
 dist-ssr
@@ -17,6 +20,8 @@ dist-ssr
 test-results
 playwright-report
 services/api/public/stylelens.zip
+services/api/public/stylelens.crx
+services/api/.stylelens.pem
 
 # Editor directories and files
 .vscode/*

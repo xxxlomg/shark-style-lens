@@ -51,12 +51,31 @@ chrome.runtime.onMessage.addListener((message: unknown, sender, sendResponse) =>
     if (tabId != null) cancelPrompt(tabId)
   }
 
+  if (msg.type === 'SELECTION_START') {
+    // Popup → Background：复用动态注入逻辑，兼容扩展安装前已打开的页面。
+    void (async () => {
+      const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true })
+      if (!tab?.id) return
+      const ok = await ensureInjectedAndSend(tab.id)
+      if (!ok) {
+        console.warn(
+          '[StyleLens] cannot start selection on this page (chrome:// or blocked by site)',
+        )
+      }
+    })()
+  }
+
   if (msg.type === 'STYLE_PROFILE_READY') {
     const payload = (message as { payload: StyleProfile }).payload
     ;(globalThis as Record<string, unknown>).__stylelensLastProfile = payload
     // 编排 AI 请求（MESSAGE_PROTOCOL §5）：Content → Background → services/api → 流回 Content
     const tabId = sender.tab?.id
     if (tabId != null) {
+      console.info('[StyleLens][Bridge] profile:received-in-background', {
+        tabId,
+        target: payload.target.tagName,
+        factCount: payload.facts.length,
+      })
       void requestPrompt(payload, tabId)
     }
   }

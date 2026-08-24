@@ -6,6 +6,7 @@ import { dispatchUi } from './state/ui-controller'
 import { useAnalysisStore } from './state/stores'
 
 const HOST_ID = 'stylelens-root'
+let promptChunkCount = 0
 
 function mount() {
   if (document.getElementById(HOST_ID)) return
@@ -42,15 +43,20 @@ chrome.runtime.onMessage.addListener((message: unknown) => {
       dispatchUi({ type: 'START_SELECT' })
       break
     case 'PROMPT_START':
+      promptChunkCount = 0
+      console.info('[StyleLens][Bridge] prompt:start')
       useAnalysisStore.getState().setStatus('streaming')
       break
     case 'PROMPT_CHUNK':
+      promptChunkCount += 1
       useAnalysisStore.getState().appendPrompt(parsed.data.payload.text)
       break
     case 'PROMPT_COMPLETE':
+      console.info('[StyleLens][Bridge] prompt:complete', { chunkCount: promptChunkCount })
       dispatchUi({ type: 'PROMPT_COMPLETE' })
       break
     case 'ANALYSIS_ERROR':
+      console.error('[StyleLens][Bridge] prompt:error', parsed.data.payload)
       useAnalysisStore.getState().setError(parsed.data.payload.message)
       dispatchUi({ type: 'FAIL' })
       break

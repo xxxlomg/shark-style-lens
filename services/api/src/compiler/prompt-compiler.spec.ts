@@ -81,10 +81,10 @@ describe('compilePromptContext（§24 / §63.1）', () => {
 
   it('filters noise facts and keeps facts/inferences separate', () => {
     const { data } = compilePromptContext(profile)
-    const observed = data.observedFacts as string[]
+    const observed = (data as { observedFacts: string[] }).observedFacts
     expect(observed.some((f) => f.startsWith('zoom'))).toBe(false)
     expect(observed.some((f) => f.startsWith('display'))).toBe(true)
-    expect(data.inferences).toHaveLength(1)
+    expect((data as { inferences: unknown[] }).inferences).toHaveLength(1)
   })
 
   it('switches Implementation Requirements by targetFramework', () => {

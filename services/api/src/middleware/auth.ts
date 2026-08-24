@@ -7,10 +7,20 @@ const DEFAULT_SECRET = 'stylelens-dev'
 export function authMiddleware(): MiddlewareHandler {
   return async (c, next) => {
     const expected = process.env.STYLELENS_API_SECRET ?? DEFAULT_SECRET
+    const traceId = c.req.header('x-trace-id')?.trim() || 'missing'
     const token = c.req.header('authorization')?.replace(/^Bearer\s+/i, '')
     if (!token || token !== expected) {
-      return c.json({ error: { code: 'E_AUTH_FAILED', message: 'Invalid shared secret' } }, 401)
+      console.warn('[StyleLens API] auth:rejected', {
+        traceId,
+        path: new URL(c.req.url).pathname,
+        reason: token ? 'secret-mismatch' : 'missing-token',
+      })
+      return c.json(
+        { error: { code: 'E_AUTH_FAILED', message: 'Invalid shared secret' } },
+        401,
+      )
     }
+    console.info('[StyleLens API] auth:accepted', { traceId })
     await next()
   }
 }

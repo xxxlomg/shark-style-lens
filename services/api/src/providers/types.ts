@@ -15,7 +15,7 @@ export interface ProviderOptions {
 
 export interface PromptProvider {
   /** 流式返回 Prompt 增量文本 */
-  stream(ctx: CompiledContext, options: ProviderOptions): AsyncIterable<string>
+  stream(ctx: CompiledContext, options: ProviderOptions, signal?: AbortSignal): AsyncIterable<string>
 }
 
 export class ProviderError extends Error {

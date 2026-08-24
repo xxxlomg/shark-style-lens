@@ -37,7 +37,21 @@ export async function runAnalysis(target: SelectedElement): Promise<void> {
     analysis.setProgress(100)
 
     // 上报 background 编排 AI 请求（Sprint 4：SSE 流式 → PROMPT_CHUNK 回流）
-    chrome.runtime.sendMessage({ type: 'STYLE_PROFILE_READY', payload: profile }).catch(() => {})
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: 'STYLE_PROFILE_READY',
+        payload: profile,
+      })
+      console.info('[StyleLens][Bridge] profile:sent-to-background', {
+        target: profile.target.tagName,
+        factCount: profile.facts.length,
+        response,
+      })
+    } catch (error) {
+      console.error('[StyleLens][Bridge] profile:send-failed', {
+        error: error instanceof Error ? error.message : String(error),
+      })
+    }
     dispatchUi({ type: 'PROFILE_READY' }) // analyzing → generating（streaming）
   } catch (err) {
     console.error('[StyleLens] analysis failed', err)

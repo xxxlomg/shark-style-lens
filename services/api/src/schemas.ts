@@ -10,7 +10,14 @@ export const promptStreamRequestSchema = z.object({
       layout: z.record(z.string(), z.unknown()),
       typography: z.record(z.string(), z.unknown()),
       visual: z.record(z.string(), z.unknown()),
-      facts: z.array(z.object({ property: z.string(), value: z.string() })),
+      facts: z.array(
+        z.object({
+          property: z.string(),
+          value: z.string(),
+          source: z.string(),
+          confidence: z.number().optional(),
+        }),
+      ),
       inferences: z.array(z.record(z.string(), z.unknown())),
       warnings: z.array(z.record(z.string(), z.unknown())),
     })

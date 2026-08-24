@@ -3,6 +3,12 @@
   "name": "StyleLens",
   "version": "0.1.0",
   "description": "Select any UI on the web and get a high-fidelity reconstruction prompt for AI coding tools.",
+  "icons": {
+    "16": "stylelens-icon-16.png",
+    "32": "stylelens-icon-32.png",
+    "48": "stylelens-icon-48.png",
+    "128": "stylelens-icon-128.png"
+  },
   "permissions": ["activeTab", "scripting", "storage"],
   "host_permissions": ["http://127.0.0.1/*", "http://localhost/*"],
   "background": {
@@ -17,6 +23,10 @@
     }
   ],
   "action": {
+    "default_icon": {
+      "16": "stylelens-icon-16.png",
+      "32": "stylelens-icon-32.png"
+    },
     "default_popup": "src/popup/index.html",
     "default_title": "StyleLens — Select UI"
   },

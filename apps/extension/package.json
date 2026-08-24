@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "build": "node scripts/build-extension.mjs",
+    "build": "node scripts/build-extension.mjs && node scripts/package-extension.mjs",
     "package": "node scripts/package-extension.mjs",
     "dev": "vite",
     "lint": "oxlint . && prettier --check .",
@@ -32,13 +32,13 @@
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.4",
-    "adm-zip": "^0.5.16",
     "oxlint": "^1.75.0",
     "prettier": "^3.6.2",
     "tailwindcss": "^4.1.11",
     "typescript": "~6.0.2",
     "vite": "^8.2.0",
-    "vitest": "^4.0.12"
+    "vitest": "^4.0.12",
+    "yazl": "^3.3.1"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

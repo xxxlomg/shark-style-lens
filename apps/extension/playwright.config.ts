@@ -26,7 +26,7 @@ export default defineConfig({
       url: 'http://127.0.0.1:3001/api/health',
       reuseExistingServer: true,
       timeout: 15_000,
-      env: { DEEPSEEK_API_KEY: '' },
+      env: { DEEPSEEK_API_KEY: '', OPENAI_API_KEY: '' },
     },
   ],
   projects: [

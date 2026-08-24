@@ -1,13 +1,14 @@
+import { BrandMark } from '../shared/BrandMark'
+
 /** Popup：极简入口（§34 / §57.3）—— MVP 只做「开始选择」 */
 export function App() {
-  const startSelection = () => {
-    chrome.tabs.query({ active: true, currentWindow: true }).then(([tab]) => {
-      if (tab?.id) {
-        chrome.tabs.sendMessage(tab.id, { type: 'SELECTION_START' }).catch(() => {
-          // 目标页未注入 content script（如 chrome:// 页）时静默失败
-        })
-      }
-    })
+  const startSelection = async () => {
+    try {
+      await chrome.runtime.sendMessage({ type: 'SELECTION_START' })
+    } finally {
+      // Popup 不应遮挡正在被选择的页面。
+      window.close()
+    }
   }
 
   return (
@@ -19,7 +20,10 @@ export function App() {
         color: '#0f172a',
       }}
     >
-      <h1 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 8px' }}>StyleLens</h1>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 8 }}>
+        <BrandMark size={28} />
+        <h1 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>StyleLens</h1>
+      </div>
       <p style={{ fontSize: 13, color: '#475569', margin: '0 0 12px', lineHeight: 1.5 }}>
         Select any UI element on the page to generate a reconstruction prompt for AI coding tools.
       </p>
