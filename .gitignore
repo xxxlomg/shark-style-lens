@@ -32,6 +32,12 @@ apps/desktop/src-tauri/icons/icon.png
 apps/desktop/src-tauri/icons/icon.ico
 services/api/public/assets/stylelens-icon-128.png
 tests/benchmark/results/
+
+# Tests are kept locally and are not part of the source release
+tests/
+**/*.spec.ts
+**/*.test.ts
+
 skills/
 **/target-codex-check/
 
