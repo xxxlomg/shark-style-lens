@@ -1,56 +1,122 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       id="page-description"
       name="description"
-      content="StyleLens 本地 Chrome 扩展安装页。下载 ZIP 后通过开发者模式加载。"
+      content="StyleLens turns selected web UI into a high-fidelity reconstruction prompt for AI coding tools."
     />
-    <link rel="icon" href="/assets/stylelens-icon.svg" type="image/svg+xml" />
-    <title id="page-title-meta">StyleLens / 本地安装</title>
+    <link rel="icon" href="/assets/stylelens-icon-128.png?v=3" type="image/png" sizes="128x128" />
+    <link rel="icon" href="/assets/stylelens-icon.svg?v=3" type="image/svg+xml" />
+    <title id="page-title-meta">StyleLens</title>
+    <script>
+      document.documentElement.dataset.theme =
+        localStorage.getItem("stylelens-theme") === "light" ? "light" : "dark";
+    </script>
     <style>
       :root {
-        --paper: #f3f5f3;
-        --paper-deep: #e8eceb;
+        --canvas: #101617;
+        --canvas-raised: #151d1e;
+        --panel: #1b2525;
+        --panel-deep: #0d1213;
+        --ink: #f2f7f4;
+        --muted: #a0b0ad;
+        --faint: #71817e;
+        --line: #30403e;
+        --line-bright: #4b625d;
+        --accent: #b7e8d1;
+        --accent-strong: #e7fff1;
+        --accent-ink: #15231e;
+        --white: #fbfdfc;
+        --grid-line: rgb(183 232 209 / 3%);
+        --line-accent-soft: rgb(183 232 209 / 14%);
+        --ring-soft: rgb(183 232 209 / 24%);
+        --quiet-hover: rgb(183 232 209 / 8%);
+        --feature-ink: #15231e;
+        --feature-muted: #345348;
+        --feature-code: #45695c;
+        --radius: 14px;
+        --shell: min(1240px, calc(100% - 64px));
+      }
+
+      html[data-theme="light"] {
+        --canvas: #f3f6f4;
+        --canvas-raised: #ffffff;
+        --panel: #e8efec;
+        --panel-deep: #f8fbfa;
         --ink: #142027;
-        --muted: #66747a;
-        --line: #d2dad8;
-        --accent: #1478e6;
-        --accent-dark: #0e5fc0;
-        --charcoal: #162329;
-        --charcoal-soft: #22323a;
-        --green: #b7e8d1;
-        --white: #f9fbfa;
+        --muted: #52636a;
+        --faint: #718087;
+        --line: #d3dfdb;
+        --line-bright: #a9bbb5;
+        --accent: #93d9b8;
+        --accent-strong: #c5f2dc;
+        --accent-ink: #123024;
+        --white: #142027;
+        --grid-line: rgb(20 32 39 / 6%);
+        --line-accent-soft: rgb(22 137 96 / 18%);
+        --ring-soft: rgb(22 137 96 / 24%);
+        --quiet-hover: rgb(22 137 96 / 8%);
+        --feature-ink: #123024;
+        --feature-muted: #285b49;
+        --feature-code: #39715b;
       }
 
       * {
         box-sizing: border-box;
       }
+
       html {
-        background: var(--paper);
+        scroll-behavior: smooth;
+        background: var(--canvas);
+        color-scheme: dark;
       }
+
+      html[data-theme="light"] {
+        color-scheme: light;
+      }
+
       body {
         min-width: 320px;
         margin: 0;
         color: var(--ink);
-        background: var(--paper);
-        font-family:
-          "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+        background: var(--canvas);
+        font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
         line-height: 1.5;
       }
+
+      body::before {
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        background-image: linear-gradient(var(--grid-line) 1px, transparent 1px),
+          linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+        background-size: 48px 48px;
+        content: "";
+        mask-image: linear-gradient(to bottom, black, transparent 72%);
+        pointer-events: none;
+      }
+
       a {
         color: inherit;
       }
+
       button,
       a {
         -webkit-tap-highlight-color: transparent;
       }
+
+      button {
+        font: inherit;
+      }
+
       .shell {
-        width: min(1600px, calc(100% - 64px));
+        width: var(--shell);
         margin: 0 auto;
       }
+
       .site-header {
         display: flex;
         align-items: center;
@@ -58,675 +124,857 @@
         min-height: 76px;
         border-bottom: 1px solid var(--line);
       }
+
       .brand {
         display: inline-flex;
         align-items: center;
         gap: 11px;
+        color: var(--ink);
         text-decoration: none;
       }
+
       .brand-mark {
         display: grid;
-        width: 30px;
-        height: 30px;
+        width: 32px;
+        height: 32px;
         place-items: center;
-        border-radius: 8px;
-        background: var(--charcoal);
+        overflow: hidden;
+        border: 1px solid var(--line-bright);
+        border-radius: 9px;
+        background: var(--accent);
       }
+
       .brand-mark img {
         display: block;
         width: 100%;
         height: 100%;
-        border-radius: inherit;
       }
+
       .brand-name {
-        font-size: 14px;
+        font-size: 15px;
         font-weight: 750;
-        letter-spacing: 0.02em;
+        letter-spacing: 0.01em;
       }
-      .header-meta {
+
+      .header-nav {
+        display: flex;
+        align-items: center;
+        gap: 22px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .header-nav a {
+        text-decoration: none;
+        transition: color 180ms ease;
+      }
+
+      .header-nav a:hover,
+      .header-nav a:focus-visible {
+        color: var(--accent-strong);
+      }
+
+      .header-tools {
         display: inline-flex;
         align-items: center;
-        gap: 16px;
-        color: var(--muted);
-        font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
-        font-size: 11px;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
+        gap: 8px;
       }
-      .language-switcher {
+
+      .language-switcher,
+      .theme-switcher {
         display: inline-flex;
         align-items: center;
         gap: 2px;
-        padding: 2px;
+        padding: 3px;
         border: 1px solid var(--line);
-        border-radius: 7px;
-        background: var(--paper-deep);
+        border-radius: 9px;
+        background: var(--canvas-raised);
       }
-      .language-button {
-        min-width: 34px;
-        min-height: 26px;
+
+      .language-button,
+      .theme-button {
+        min-width: 31px;
+        min-height: 25px;
         padding: 0 7px;
         border: 0;
-        border-radius: 5px;
-        color: var(--muted);
+        border-radius: 6px;
+        color: var(--faint);
         background: transparent;
-        font: inherit;
+        cursor: pointer;
         font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
         font-size: 10px;
         font-weight: 750;
-        cursor: pointer;
       }
-      .language-button[aria-pressed="true"] {
-        color: var(--ink);
-        background: var(--white);
-        box-shadow: 0 1px 3px rgb(20 32 39 / 12%);
+
+      .theme-button {
+        min-width: 43px;
       }
-      .language-button:focus-visible {
-        outline: 2px solid var(--accent);
-        outline-offset: 1px;
+
+      .language-button[aria-pressed="true"],
+      .theme-button[aria-pressed="true"] {
+        color: var(--accent-ink);
+        background: var(--accent);
       }
-      .status {
-        display: inline-flex;
-        align-items: center;
-        gap: 7px;
-      }
-      .status::before {
-        width: 7px;
-        height: 7px;
-        border-radius: 50%;
-        background: #31a96f;
-        content: "";
-      }
+
       .hero {
-        position: relative;
         display: grid;
-        grid-template-columns: minmax(0, 1.05fr) minmax(460px, 0.95fr);
-        gap: clamp(42px, 5vw, 92px);
+        grid-template-columns: minmax(0, 1fr) minmax(430px, 0.88fr);
+        gap: clamp(42px, 7vw, 110px);
         align-items: center;
         min-height: calc(100svh - 76px);
-        padding: 88px 0 96px;
+        padding: 72px 0 88px;
       }
-      .eyebrow {
+
+      .hero-copy {
+        max-width: 610px;
+      }
+
+      .eyebrow,
+      .section-label {
         margin: 0 0 18px;
-        color: var(--accent-dark);
+        color: var(--accent);
         font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
         font-size: 11px;
         font-weight: 700;
-        letter-spacing: 0.14em;
+        letter-spacing: 0.15em;
         text-transform: uppercase;
       }
+
       h1,
       h2,
+      h3,
       p {
         margin-top: 0;
       }
+
       h1 {
-        max-width: 690px;
-        margin-bottom: 24px;
-        font-size: 72px;
+        max-width: 580px;
+        margin-bottom: 26px;
+        font-size: clamp(48px, 6.6vw, 84px);
         font-weight: 760;
-        letter-spacing: 0;
-        line-height: 1.12;
+        letter-spacing: -0.04em;
+        line-height: 0.98;
       }
+
+      .hero-title-zh,
+      .hero-title-en {
+        display: block;
+      }
+
+      html[lang="zh-CN"] .hero-title-en,
+      html[lang="en"] .hero-title-zh {
+        display: none;
+      }
+
+      .hero-title-zh {
+        line-height: 1.08;
+        letter-spacing: -0.025em;
+        word-break: keep-all;
+      }
+
+      .hero-title-zh > span {
+        display: block;
+      }
+
       .headline-accent {
         display: block;
-        margin-top: 0.12em;
         color: var(--accent);
       }
-      .headline-base {
-        display: block;
-        white-space: nowrap;
-      }
-      .hero-copy {
-        max-width: 520px;
+
+      .hero-description {
+        max-width: 510px;
         margin-bottom: 30px;
         color: var(--muted);
         font-size: 17px;
         line-height: 1.7;
       }
-      .hero-note {
+
+      .hero-actions {
         display: flex;
         flex-wrap: wrap;
-        gap: 10px 18px;
-        margin: 0;
-        color: var(--muted);
-        font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
-        font-size: 11px;
+        gap: 10px;
+        margin-bottom: 36px;
       }
-      .hero-note span {
+
+      .button {
+        display: inline-flex;
+        min-height: 44px;
+        align-items: center;
+        justify-content: center;
+        padding: 0 16px;
+        border: 1px solid transparent;
+        border-radius: 10px;
+        font-size: 13px;
+        font-weight: 750;
+        text-decoration: none;
+        transition: transform 180ms ease, background-color 180ms ease, border-color 180ms ease;
+      }
+
+      .button:hover,
+      .button:focus-visible {
+        transform: translateY(-2px);
+      }
+
+      .button:active {
+        transform: translateY(0) scale(0.98);
+      }
+
+      .button-primary {
+        color: var(--accent-ink);
+        background: var(--accent);
+      }
+
+      .button-primary:hover,
+      .button-primary:focus-visible {
+        background: var(--accent-strong);
+      }
+
+      .button-quiet {
+        color: var(--ink);
+        border-color: var(--line-bright);
+        background: transparent;
+        cursor: pointer;
+      }
+
+      .button-quiet:hover,
+      .button-quiet:focus-visible {
+        border-color: var(--accent);
+        background: var(--quiet-hover);
+      }
+
+      .hero-facts {
+        display: grid;
+        grid-template-columns: repeat(3, max-content);
+        gap: 22px;
+        margin: 0;
+        color: var(--faint);
+        font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+        font-size: 10px;
+        text-transform: uppercase;
+      }
+
+      .hero-facts span {
         display: inline-flex;
         align-items: center;
         gap: 7px;
       }
-      .hero-note span::before {
-        width: 5px;
-        height: 5px;
+
+      .hero-facts span::before {
+        width: 6px;
+        height: 6px;
         border-radius: 50%;
         background: var(--accent);
         content: "";
       }
-      .install-stage {
+
+      .hero-stage {
         position: relative;
-        overflow: hidden;
-        padding: 30px;
-        border: 1px solid var(--charcoal-soft);
-        border-radius: 16px;
-        color: var(--white);
-        background: var(--charcoal);
-        box-shadow: 0 22px 46px rgb(20 32 39 / 14%);
+        min-height: 470px;
+        padding: 24px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: var(--canvas-raised);
+        isolation: isolate;
       }
-      .stage-heading {
-        display: flex;
-        align-items: start;
-        justify-content: space-between;
-        gap: 16px;
-        margin-bottom: 22px;
-      }
-      .stage-heading h2 {
-        margin-bottom: 5px;
-        font-size: 20px;
-        letter-spacing: 0;
-      }
-      .stage-heading p {
-        margin-bottom: 0;
-        color: #a4b3b7;
-        font-size: 13px;
-      }
-      .file-type {
-        flex: 0 0 auto;
-        padding: 5px 7px;
-        border: 1px solid #3c555d;
-        border-radius: 5px;
-        color: var(--green);
-        font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
-        font-size: 10px;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-      }
-      .package-card {
-        display: grid;
-        grid-template-columns: 48px minmax(0, 1fr) auto;
-        gap: 14px;
-        align-items: center;
-        width: 100%;
-        padding: 15px;
-        border: 1px solid #d4ddda;
+
+      .hero-stage::after {
+        position: absolute;
+        inset: 12px;
+        z-index: -1;
+        border: 1px solid var(--line-accent-soft);
         border-radius: 10px;
-        color: var(--ink);
-        background: var(--white);
-        user-select: none;
+        content: "";
+        pointer-events: none;
       }
-      .file-icon {
-        display: grid;
-        width: 48px;
-        height: 54px;
-        place-items: center;
-        border: 1px solid #b9c9c7;
-        border-radius: 7px;
-        color: var(--accent-dark);
-        background: #e8f1ee;
-        font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
-        font-size: 11px;
-        font-weight: 800;
-      }
-      .file-name {
-        display: block;
-        overflow: hidden;
-        margin-bottom: 3px;
-        font-size: 14px;
-        font-weight: 750;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-      .file-detail {
-        display: block;
-        color: #647278;
-        font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
-        font-size: 10px;
-      }
-      .package-label {
-        padding: 7px 8px;
-        border-radius: 5px;
-        color: var(--accent-dark);
-        background: #dcecff;
-        font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
-        font-size: 10px;
-        font-weight: 800;
-        letter-spacing: 0.05em;
-      }
-      .stage-status {
-        min-height: 38px;
-        margin: 16px 0 14px;
-        padding: 10px 12px;
-        border-left: 2px solid var(--accent);
-        color: #c7d2d4;
-        background: #1d2d34;
-        font-size: 12px;
-        line-height: 1.5;
-      }
-      .stage-status.is-active {
-        border-left-color: var(--green);
-        color: var(--green);
-      }
-      .browser-preview {
-        overflow: hidden;
-        border: 1px solid #3a4f56;
-        border-radius: 9px;
-        background: #edf2f1;
-      }
-      .browser-bar {
-        display: flex;
-        align-items: center;
-        gap: 7px;
-        height: 31px;
-        padding: 0 10px;
-        background: #dce5e3;
-      }
-      .browser-dot {
-        width: 6px;
-        height: 6px;
-        border-radius: 50%;
-        background: #9aa9a9;
-      }
-      .browser-address {
-        overflow: hidden;
-        flex: 1;
-        margin-left: 6px;
-        padding: 4px 9px;
-        border: 1px solid #c5d0ce;
-        border-radius: 5px;
-        color: #677678;
-        font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
-        font-size: 10px;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-      .browser-content {
-        display: grid;
-        grid-template-columns: 1fr 1.3fr;
-        gap: 12px;
-        min-height: 120px;
-        padding: 16px;
-      }
-      .browser-copy {
-        color: #29434a;
-        font-size: 11px;
-        font-weight: 750;
-      }
-      .browser-copy small {
-        display: block;
-        margin-top: 5px;
-        color: #829091;
-        font-size: 10px;
-        font-weight: 500;
-      }
-      .drop-zone {
-        display: grid;
-        min-height: 88px;
-        place-items: center;
-        padding: 12px;
-        border: 1px dashed #7b9997;
-        border-radius: 7px;
-        color: #3d6665;
-        background: #deeee9;
-        font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
-        font-size: 10px;
-        text-align: center;
-        transition:
-          border-color 160ms ease,
-          background 160ms ease;
-      }
-      .stage-actions {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 10px;
-        margin-top: 18px;
-      }
-      .button {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-height: 38px;
-        padding: 0 13px;
-        border: 1px solid transparent;
-        border-radius: 7px;
-        font: inherit;
-        font-size: 12px;
-        font-weight: 750;
-        text-decoration: none;
-        cursor: pointer;
-        transition:
-          transform 160ms ease,
-          background 160ms ease,
-          border-color 160ms ease;
-      }
-      .button:hover,
-      .button:focus-visible {
-        outline: none;
-        transform: translateY(-1px);
-      }
-      .button:active {
-        transform: translateY(1px);
-      }
-      .button-primary {
-        color: #fff;
-        background: var(--accent);
-      }
-      .button-primary:hover,
-      .button-primary:focus-visible {
-        background: #2a8cf4;
-      }
-      .button-quiet {
-        color: #c8d4d4;
-        border-color: #3e555c;
-        background: transparent;
-      }
-      .button-quiet:hover,
-      .button-quiet:focus-visible {
-        border-color: #7d969b;
-        background: #22343b;
-      }
-      .stage-actions .button-primary {
-        flex: 1 1 140px;
-      }
-      .fallback-download {
+
+      .stage-topline,
+      .stage-bottomline {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 16px;
-        margin-top: 12px;
-        padding-top: 12px;
-        border-top: 1px solid #30434a;
-      }
-      .fallback-download strong,
-      .fallback-download span {
-        display: block;
-      }
-      .fallback-download strong {
-        margin-bottom: 2px;
-        color: #d7e2e1;
-        font-size: 11px;
-      }
-      .fallback-download span {
-        color: #90a0a3;
-        font-size: 10px;
-        line-height: 1.45;
-      }
-      .download-link {
-        flex: 0 0 auto;
-        color: #a9d0ff;
-        font-size: 11px;
-        font-weight: 750;
-        text-decoration: none;
-      }
-      .download-link:hover,
-      .download-link:focus-visible {
-        color: #fff;
-        text-decoration: underline;
-      }
-      .install-note {
-        margin: 12px 0 0;
-        color: #90a0a3;
-        font-size: 11px;
-        line-height: 1.55;
-      }
-      .install-note strong {
-        color: #d7e2e1;
-      }
-      .workflow {
-        display: grid;
-        grid-template-columns: 0.8fr 1.2fr;
-        gap: clamp(40px, 8vw, 120px);
-        padding: 74px 0 88px;
-        border-top: 1px solid var(--line);
-      }
-      .section-label {
-        margin: 0 0 12px;
-        color: var(--muted);
+        color: var(--faint);
         font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
         font-size: 10px;
-        font-weight: 700;
-        letter-spacing: 0.14em;
+        letter-spacing: 0.08em;
         text-transform: uppercase;
       }
-      .workflow h2 {
-        max-width: 300px;
-        margin-bottom: 14px;
-        font-size: 28px;
-        letter-spacing: 0;
-        line-height: 1.05;
+
+      .stage-topline strong {
+        color: var(--accent);
+        font-weight: 700;
       }
-      .workflow-intro {
-        max-width: 315px;
-        margin-bottom: 0;
+
+      .stage-art {
+        display: grid;
+        min-height: 344px;
+        place-items: center;
+      }
+
+      .stage-art::before {
+        position: absolute;
+        width: 240px;
+        height: 240px;
+        border: 1px solid var(--ring-soft);
+        border-radius: 50%;
+        content: "";
+        pointer-events: none;
+      }
+
+      .stage-pointer {
+        position: relative;
+        display: block;
+        width: 205px;
+        height: 205px;
+        transform: translate3d(var(--pointer-x, 0px), var(--pointer-y, 0px), 0);
+        filter: drop-shadow(0 24px 20px rgb(0 0 0 / 28%));
+        transition: transform 220ms ease-out;
+      }
+
+      .stage-caption {
+        max-width: 240px;
+        margin: -12px auto 0;
         color: var(--muted);
-        font-size: 14px;
-        line-height: 1.7;
+        font-size: 13px;
+        line-height: 1.55;
+        text-align: center;
       }
-      .steps {
+
+      .stage-bottomline {
+        padding-top: 20px;
         border-top: 1px solid var(--line);
       }
-      .step {
+
+      .stage-bottomline strong {
+        color: var(--ink);
+        font-weight: 700;
+      }
+
+      .install-band {
         display: grid;
-        grid-template-columns: 36px 1fr;
-        gap: 16px;
-        padding: 18px 0;
+        grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+        gap: 56px;
+        padding: 96px 0 104px;
+        border-top: 1px solid var(--line);
+      }
+
+      .install-band h2,
+      .signal-section h2,
+      .workflow-section h2 {
+        max-width: 560px;
+        margin-bottom: 16px;
+        font-size: clamp(32px, 4.6vw, 58px);
+        letter-spacing: -0.035em;
+        line-height: 1;
+      }
+
+      .section-intro {
+        max-width: 470px;
+        color: var(--muted);
+        font-size: 15px;
+        line-height: 1.7;
+      }
+
+      .install-panel {
+        padding: 20px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: var(--panel);
+      }
+
+      .package-row {
+        display: grid;
+        grid-template-columns: 58px minmax(0, 1fr) auto;
+        gap: 14px;
+        align-items: center;
+        padding-bottom: 20px;
         border-bottom: 1px solid var(--line);
       }
-      .step-number {
-        color: var(--accent-dark);
-        font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
-        font-size: 11px;
+
+      .package-icon {
+        display: grid;
+        width: 58px;
+        height: 58px;
+        place-items: center;
+        overflow: hidden;
+        border: 1px solid var(--line-bright);
+        border-radius: 12px;
+        background: var(--accent);
+      }
+
+      .package-icon img {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
+      .package-name,
+      .package-detail {
+        display: block;
+      }
+
+      .package-name {
+        margin-bottom: 3px;
+        font-size: 15px;
         font-weight: 750;
       }
-      .step h3 {
-        margin: 0 0 4px;
-        font-size: 14px;
+
+      .package-detail {
+        color: var(--faint);
+        font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+        font-size: 10px;
       }
-      .step p {
-        max-width: 540px;
+
+      .package-tag {
+        padding: 6px 8px;
+        border: 1px solid var(--line-bright);
+        border-radius: 6px;
+        color: var(--accent);
+        font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+        font-size: 10px;
+        font-weight: 750;
+      }
+
+      .install-status {
+        min-height: 44px;
+        margin: 18px 0;
+        padding: 11px 13px;
+        border-left: 2px solid var(--accent);
+        color: var(--muted);
+        background: var(--panel-deep);
+        font-size: 12px;
+      }
+
+      .install-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 9px;
+        margin-bottom: 18px;
+      }
+
+      .install-note {
         margin: 0;
+        color: var(--faint);
+        font-size: 11px;
+        line-height: 1.6;
+      }
+
+      .install-note strong {
+        display: block;
+        margin-bottom: 3px;
+        color: var(--ink);
+        font-size: 12px;
+      }
+
+      .workflow-section {
+        padding: 100px 0 108px;
+        border-top: 1px solid var(--line);
+      }
+
+      .workflow-heading {
+        max-width: 660px;
+        margin-bottom: 50px;
+      }
+
+      .steps {
+        display: grid;
+        grid-template-columns: 1.2fr 0.9fr 1fr;
+        gap: 0;
+        border-top: 1px solid var(--line);
+      }
+
+      .step {
+        min-height: 220px;
+        padding: 22px 24px 24px 0;
+        border-right: 1px solid var(--line);
+      }
+
+      .step + .step {
+        padding-left: 24px;
+      }
+
+      .step:last-child {
+        border-right: 0;
+      }
+
+      .step-number {
+        margin-bottom: 48px;
+        color: var(--accent);
+        font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+        font-size: 12px;
+      }
+
+      .step h3 {
+        max-width: 230px;
+        margin-bottom: 9px;
+        font-size: 19px;
+        line-height: 1.2;
+      }
+
+      .step p {
+        max-width: 250px;
+        margin-bottom: 0;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.65;
+      }
+
+      code {
+        padding: 2px 5px;
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        color: var(--accent-strong);
+        background: var(--panel-deep);
+        font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+        font-size: 0.9em;
+      }
+
+      .signal-section {
+        padding: 96px 0 112px;
+        border-top: 1px solid var(--line);
+      }
+
+      .signal-heading {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 30px;
+        margin-bottom: 44px;
+      }
+
+      .signal-heading p {
+        max-width: 330px;
+        margin-bottom: 4px;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.6;
+      }
+
+      .signals {
+        display: grid;
+        grid-template-columns: 1.25fr 0.75fr 0.95fr;
+        gap: 12px;
+      }
+
+      .signal {
+        min-height: 250px;
+        padding: 22px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: var(--canvas-raised);
+      }
+
+      .signal:first-child {
+        color: var(--feature-ink);
+        background: var(--accent);
+      }
+
+      .signal-label {
+        display: block;
+        margin-bottom: 90px;
+        font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+        font-size: 10px;
+        font-weight: 750;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .signal h3 {
+        max-width: 260px;
+        margin-bottom: 9px;
+        font-size: 22px;
+        letter-spacing: -0.02em;
+        line-height: 1.1;
+      }
+
+      .signal p {
+        max-width: 285px;
+        margin-bottom: 0;
         color: var(--muted);
         font-size: 13px;
       }
-      .step code {
-        color: var(--ink);
+
+      .signal:first-child p {
+        color: var(--feature-muted);
+      }
+
+      .signal-code {
+        display: block;
+        margin-top: 34px;
+        color: var(--faint);
         font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
         font-size: 11px;
+        line-height: 1.8;
       }
+
+      .signal:first-child .signal-code {
+        color: var(--feature-code);
+      }
+
       .reality-check {
-        display: grid;
-        grid-template-columns: 1fr auto;
-        gap: 20px;
+        display: flex;
         align-items: center;
-        margin-bottom: 64px;
-        padding: 19px 22px;
-        border: 1px solid #c4d0ce;
-        border-radius: 10px;
-        background: var(--paper-deep);
+        justify-content: space-between;
+        gap: 24px;
+        padding: 20px 0;
+        border-top: 1px solid var(--line);
+        border-bottom: 1px solid var(--line);
       }
+
       .reality-check strong {
         display: block;
         margin-bottom: 4px;
         font-size: 13px;
       }
+
       .reality-check p {
-        max-width: 670px;
+        max-width: 650px;
         margin: 0;
         color: var(--muted);
         font-size: 12px;
       }
-      .reality-check code {
-        padding: 3px 6px;
-        border-radius: 4px;
-        color: var(--ink);
-        background: #d8e3e1;
-        font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
-        font-size: 11px;
-      }
-      .bookmark-note {
-        color: var(--muted);
+
+      .local-badge {
+        flex: 0 0 auto;
+        padding: 6px 9px;
+        border: 1px solid var(--line-bright);
+        border-radius: 7px;
+        color: var(--accent);
         font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
         font-size: 10px;
-        white-space: nowrap;
-      }
-      .project-info {
-        display: grid;
-        grid-template-columns: minmax(220px, 0.75fr) minmax(0, 1.25fr);
-        gap: clamp(36px, 8vw, 128px);
-        align-items: center;
-        padding: 30px 0 72px;
-        border-top: 1px solid var(--line);
-      }
-      .project-info h2 {
-        max-width: 380px;
-        margin: 0;
-        font-size: 28px;
-        font-weight: 720;
-        letter-spacing: 0;
-        line-height: 1.15;
-      }
-      .project-info-copy {
-        max-width: 720px;
-        margin: 0;
-        color: var(--muted);
-        font-size: 14px;
-        line-height: 1.7;
-      }
-      .repository-link {
-        display: inline-flex;
-        flex-wrap: wrap;
-        align-items: baseline;
-        gap: 8px;
-        margin-top: 16px;
-        color: var(--accent-dark);
-        font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
-        font-size: 12px;
         font-weight: 750;
-        text-decoration: none;
-        word-break: break-word;
+        text-transform: uppercase;
       }
-      .repository-link:hover,
-      .repository-link:focus-visible {
-        color: var(--accent);
-        text-decoration: underline;
-        text-underline-offset: 3px;
-      }
-      .repository-arrow {
-        font-size: 16px;
-        line-height: 1;
-      }
+
       footer {
         display: flex;
+        align-items: center;
         justify-content: space-between;
-        gap: 16px;
-        padding: 20px 0 28px;
-        border-top: 1px solid var(--line);
-        color: var(--muted);
+        min-height: 84px;
+        color: var(--faint);
         font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
         font-size: 10px;
-        letter-spacing: 0.04em;
       }
+
+      .footer-meta {
+        display: inline-flex;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+
       footer a {
-        color: var(--accent-dark);
+        color: var(--muted);
         text-decoration: none;
       }
-      footer a:hover {
-        text-decoration: underline;
+
+      footer a:hover,
+      footer a:focus-visible {
+        color: var(--accent);
+      }
+
+      :focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 3px;
+      }
+
+      @media (prefers-reduced-motion: no-preference) {
+        .reveal {
+          animation: reveal 700ms cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+
+        .reveal-delay-1 {
+          animation-delay: 100ms;
+        }
+
+        .reveal-delay-2 {
+          animation-delay: 180ms;
+        }
+
+        .stage-pointer {
+          animation: pointer-float 4.5s ease-in-out infinite;
+        }
+      }
+
+      @keyframes reveal {
+        from {
+          opacity: 0;
+          transform: translateY(18px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes pointer-float {
+        0%,
+        100% {
+          margin-top: 0;
+        }
+        50% {
+          margin-top: -8px;
+        }
       }
 
       @media (max-width: 980px) {
         .hero,
-        .workflow,
-        .project-info {
+        .install-band {
           grid-template-columns: 1fr;
         }
+
         .hero {
-          gap: 44px;
+          gap: 48px;
           min-height: auto;
-          padding-top: 72px;
         }
-        .install-stage {
-          width: 100%;
-          max-width: 760px;
-          margin: 0 auto;
+
+        .hero-stage {
+          max-width: 620px;
         }
-        .project-info {
-          gap: 22px;
+
+        .install-band {
+          gap: 34px;
+        }
+
+        .signals {
+          grid-template-columns: 1fr 1fr;
+        }
+
+        .signal:first-child {
+          grid-column: 1 / -1;
         }
       }
-      @media (max-width: 560px) {
-        .shell {
-          width: calc(100% - 32px);
+
+      @media (max-width: 720px) {
+        :root {
+          --shell: calc(100% - 32px);
         }
+
         .site-header {
-          min-height: 64px;
+          min-height: 66px;
         }
-        .header-meta {
-          font-size: 9px;
+
+        .header-nav {
+          display: none;
         }
+
         .hero {
-          padding: 58px 0;
+          padding: 60px 0 74px;
         }
+
         h1 {
-          font-size: 44px;
+          font-size: clamp(47px, 14vw, 72px);
         }
-        .hero-copy {
+
+        .hero-description {
           font-size: 15px;
         }
-        .install-stage {
-          padding: 20px;
+
+        .hero-facts {
+          grid-template-columns: 1fr;
+          gap: 8px;
         }
-        .package-card {
-          grid-template-columns: 42px minmax(0, 1fr);
+
+        .hero-stage {
+          min-height: 390px;
+          padding: 18px;
         }
-        .file-icon {
-          width: 42px;
-          height: 48px;
+
+        .stage-art {
+          min-height: 265px;
         }
-        .browser-content {
+
+        .stage-pointer {
+          width: 165px;
+          height: 165px;
+        }
+
+        .install-band,
+        .workflow-section,
+        .signal-section {
+          padding: 72px 0 78px;
+        }
+
+        .package-row {
+          grid-template-columns: 50px minmax(0, 1fr);
+        }
+
+        .package-icon {
+          width: 50px;
+          height: 50px;
+        }
+
+        .package-tag {
+          display: none;
+        }
+
+        .steps,
+        .signals {
           grid-template-columns: 1fr;
         }
-        .stage-actions .button-primary {
-          flex-basis: 100%;
+
+        .signal:first-child {
+          grid-column: auto;
         }
-        .fallback-download {
+
+        .step,
+        .step + .step {
+          min-height: auto;
+          padding: 20px 0;
+          border-right: 0;
+          border-bottom: 1px solid var(--line);
+        }
+
+        .step:last-child {
+          border-bottom: 0;
+        }
+
+        .step-number,
+        .signal-label {
+          margin-bottom: 28px;
+        }
+
+        .signal {
+          min-height: 210px;
+        }
+
+        .signal-heading {
+          display: block;
+        }
+
+        .signal-heading p {
+          margin-top: 18px;
+        }
+
+        .reality-check,
+        footer {
           align-items: flex-start;
           flex-direction: column;
-          gap: 7px;
         }
-        .workflow {
-          padding: 58px 0 64px;
-        }
-        .project-info {
-          padding: 24px 0 56px;
-        }
-        .project-info h2 {
-          font-size: 25px;
-        }
+
         .reality-check {
-          grid-template-columns: 1fr;
-          margin-bottom: 48px;
+          gap: 14px;
         }
-        .bookmark-note {
-          white-space: normal;
-        }
+
         footer {
-          flex-direction: column;
+          justify-content: center;
+          gap: 10px;
+          padding: 22px 0;
+        }
+
+        .footer-meta {
+          justify-content: center;
+          gap: 10px 14px;
         }
       }
-      @media (max-width: 400px) {
-        h1 {
-          font-size: 42px;
-        }
-      }
+
       @media (prefers-reduced-motion: reduce) {
-        *,
-        *::before,
-        *::after {
-          scroll-behavior: auto !important;
-          transition-duration: 0.01ms !important;
+        html {
+          scroll-behavior: auto;
+        }
+
+        .stage-pointer {
+          transition: none;
         }
       }
     </style>
@@ -736,352 +984,301 @@
       <header class="site-header">
         <a class="brand" href="/" aria-label="StyleLens home">
           <span class="brand-mark" aria-hidden="true">
-            <img src="/assets/stylelens-icon.svg" alt="" />
+            <img src="/assets/stylelens-icon.svg?v=3" alt="" />
           </span>
           <span class="brand-name">StyleLens</span>
         </a>
-        <div class="header-meta">
-          <span class="status" data-i18n="headerStatus">本地构建</span>
-          <span>chrome / mv3</span>
-          <span class="language-switcher" aria-label="Language">
-            <button
-              class="language-button"
-              type="button"
-              data-language="zh"
-              aria-pressed="true"
-            >
-              中
-            </button>
-            <button
-              class="language-button"
-              type="button"
-              data-language="en"
-              aria-pressed="false"
-            >
-              EN
-            </button>
-          </span>
+        <nav class="header-nav" aria-label="Primary">
+          <a href="#install" data-i18n="navInstall">安装</a>
+          <a href="#workflow" data-i18n="navWorkflow">工作方式</a>
+          <a href="#signals" data-i18n="navSignals">分析信号</a>
+        </nav>
+        <div class="header-tools">
+          <div class="language-switcher" aria-label="Language">
+            <button class="language-button" type="button" data-language="zh" aria-pressed="false">中</button>
+            <button class="language-button" type="button" data-language="en" aria-pressed="true">EN</button>
+          </div>
+          <div class="theme-switcher" aria-label="Theme">
+            <button class="theme-button" type="button" data-theme-mode="dark" aria-pressed="true" data-i18n="themeDark">深色</button>
+            <button class="theme-button" type="button" data-theme-mode="light" aria-pressed="false" data-i18n="themeLight">浅色</button>
+          </div>
         </div>
       </header>
 
       <main>
         <section class="hero" aria-labelledby="page-title">
-          <div>
-            <p class="eyebrow" data-i18n="eyebrow">安装这个现场工具</p>
-            <h1 id="page-title">
-              <span class="headline-base" data-i18n="heroTitle"
-                >网页到 UI brief</span
-              >
-              <span class="headline-accent" data-i18n="heroAccent"
-                >一键生成</span
-              >
+          <div class="hero-copy">
+            <p class="eyebrow reveal" data-i18n="eyebrow">给网页装上一只眼睛</p>
+            <h1 class="reveal reveal-delay-1" id="page-title">
+              <span class="hero-title-zh">
+                <span data-i18n="heroTitleZhLine1">看见网页 UI</span>
+                <span class="headline-accent" data-i18n="heroTitleZhLine2">选中它，</span>
+                <span class="headline-accent" data-i18n="heroTitleZhLine3">复刻它。</span>
+              </span>
+              <span class="hero-title-en">
+                <span data-i18n="heroTitle">See the UI.</span>
+                <span class="headline-accent" data-i18n="heroAccent">Select it. Rebuild it.</span>
+              </span>
             </h1>
-            <p class="hero-copy" data-i18n="heroCopy">
-              选中元素，生成 UI prompt。
+            <p class="hero-description reveal reveal-delay-2" data-i18n="heroCopy">
+              StyleLens 把你喜欢的网页组件拆成 DOM、样式、布局和视觉证据，再交给 AI 编程工具生成高保真重建 Prompt。
             </p>
-            <p class="hero-note">
-              <span data-i18n="heroNoteLocal">本地运行</span>
-              <span data-i18n="heroNotePrivate">页面不上传</span>
-              <span data-i18n="heroNoteInstall">开发者模式</span>
+            <div class="hero-actions reveal reveal-delay-2">
+              <a class="button button-primary" href="#install" data-i18n="heroCta">查看安装步骤</a>
+              <a class="button button-quiet" href="#workflow" data-i18n="heroSecondary">先看看怎么用</a>
+            </div>
+            <p class="hero-facts reveal reveal-delay-2">
+              <span data-i18n="heroFactLocal">本地优先</span>
+              <span data-i18n="heroFactVisual">精准截图</span>
+              <span data-i18n="heroFactPrompt">流式 Prompt</span>
             </p>
           </div>
 
-          <section class="install-stage" aria-labelledby="install-title">
-            <div class="stage-heading">
-              <div>
-                <h2 id="install-title" data-i18n="installTitle">
-                  安装 StyleLens
-                </h2>
-                <p data-i18n="installSubtitle">
-                  下载 ZIP，通过 Chrome 的开发者模式加载。
-                </p>
-              </div>
-              <span class="file-type">ZIP</span>
+          <div class="hero-stage reveal reveal-delay-1" id="hero-stage" aria-label="StyleLens pointer mark">
+            <div class="stage-topline">
+              <strong data-i18n="stageKicker">Selection instrument</strong>
+              <span>STYLELENS / 01</span>
             </div>
+            <div class="stage-art">
+              <img class="stage-pointer" src="/assets/stylelens-icon.svg?v=3" alt="StyleLens pointer" />
+            </div>
+            <p class="stage-caption" data-i18n="stageCopy">移动鼠标，选中一个元素。剩下的交给分析器。</p>
+            <div class="stage-bottomline">
+              <span data-i18n="stageBottomLeft">DOM + Vision</span>
+              <strong data-i18n="stageBottomRight">Ready to inspect</strong>
+            </div>
+          </div>
+        </section>
 
-            <div class="package-card">
-              <span class="file-icon" aria-hidden="true">.ZIP</span>
+        <section class="install-band" id="install" aria-labelledby="install-title">
+          <div>
+            <p class="section-label" data-i18n="installLabel">开始使用</p>
+            <h2 id="install-title" data-i18n="installTitle">三分钟，把它装进 Chrome。</h2>
+            <p class="section-intro" data-i18n="installIntro">下载 ZIP，解压，在扩展程序页面加载文件夹。安装完成后，StyleLens 会出现在你的浏览器工具栏里。</p>
+          </div>
+          <div class="install-panel">
+            <div class="package-row">
+              <span class="package-icon" aria-hidden="true"><img src="/assets/stylelens-icon.svg?v=3" alt="" /></span>
               <span>
-                <span class="file-name">stylelens.zip</span>
-                <span class="file-detail" data-i18n="packageDetail"
-                  >Chrome 开发者模式安装包</span
-                >
+                <span class="package-name">stylelens.zip</span>
+                <span class="package-detail" data-i18n="packageDetail">Chrome Developer mode package</span>
               </span>
-              <span class="package-label" data-i18n="packageLabel">下载</span>
+              <span class="package-tag">ZIP</span>
             </div>
-
-            <div
-              class="stage-status"
-              id="stage-status"
-              role="status"
-              aria-live="polite"
-              data-i18n="stageStatus"
-            >
-              下载 ZIP 后解压，再选择解压出的文件夹。
-            </div>
-
-            <div class="browser-preview" aria-hidden="true">
-              <div class="browser-bar">
-                <span class="browser-dot"></span>
-                <span class="browser-dot"></span>
-                <span class="browser-dot"></span>
-                <span class="browser-address">chrome://extensions</span>
-              </div>
-              <div class="browser-content">
-                <div class="browser-copy">
-                  <span data-i18n="previewTitle">扩展程序</span>
-                  <small data-i18n="previewMode">开发者模式已开启</small>
-                </div>
-                <div class="drop-zone" data-i18n="previewAction">
-                  加载已解压的扩展程序
-                </div>
-              </div>
-            </div>
-
-            <div class="stage-actions">
-              <a
-                class="button button-primary"
-                href="/stylelens.zip"
-                download="stylelens.zip"
-                aria-label="下载 StyleLens ZIP 安装包"
-                data-i18n="downloadZip"
-                >下载 ZIP</a
-              >
-              <button
-                class="button button-quiet"
-                id="copy-extensions-url"
-                type="button"
-                data-i18n="copyUrl"
-              >
-                复制扩展页地址
-              </button>
-            </div>
-            <div class="fallback-download">
-              <div>
-                <strong data-i18n="recommendedTitle"
-                  >Chrome 推荐的本地安装方式</strong
-                >
-                <span data-i18n="recommendedCopy"
-                  >解压下载文件，然后选择文件夹中的“加载已解压的扩展程序”。</span
-                >
-              </div>
-              <span class="download-link" data-i18n="developerMode"
-                >开发者模式</span
-              >
+            <div class="install-status" id="stage-status" role="status" aria-live="polite" data-i18n="stageStatus">下载后解压，再选择解压出的文件夹。</div>
+            <div class="install-actions">
+              <a class="button button-primary" href="/stylelens.zip" download="stylelens.zip" data-i18n="downloadZip">下载 ZIP</a>
+              <button class="button button-quiet" id="copy-extensions-url" type="button" data-i18n="copyUrl">复制扩展页地址</button>
             </div>
             <p class="install-note">
               <strong data-i18n="whyNotCrxTitle">Why not CRX?</strong>
-              <span data-i18n="whyNotCrx"
-                >Standard Chrome requires a Chrome Web Store proof for many
-                local CRX installs. This project cannot create Google's private
-                signature, so ZIP loading is the dependable option.</span
-              >
-            </p>
-          </section>
-        </section>
-
-        <section class="workflow" aria-labelledby="workflow-title">
-          <div>
-            <p class="section-label" data-i18n="workflowLabel">安装路径</p>
-            <h2 id="workflow-title" data-i18n="workflowTitle">
-              一个扩展，三步完成安装。
-            </h2>
-            <p class="workflow-intro" data-i18n="workflowIntro">
-              下载 ZIP，解压后在 Chrome 的扩展程序管理页加载文件夹。
+              <span data-i18n="whyNotCrx">Chrome 对本地 CRX 文件存在签名限制。ZIP 加载是本地开发最稳定的方式。</span>
             </p>
           </div>
+        </section>
 
+        <section class="workflow-section" id="workflow" aria-labelledby="workflow-title">
+          <div class="workflow-heading">
+            <p class="section-label" data-i18n="workflowLabel">使用方式</p>
+            <h2 id="workflow-title" data-i18n="workflowTitle">从一个元素，得到一份能用的 Prompt。</h2>
+            <p class="section-intro" data-i18n="workflowIntro">它不会只看一张图。StyleLens 同时读取浏览器里的结构证据和精确目标截图。</p>
+          </div>
           <div class="steps">
             <article class="step">
               <div class="step-number">01</div>
-              <div>
-                <h3 data-i18n="step1Title">打开 Chrome 扩展程序管理页</h3>
-                <p data-i18n="step1Copy">
-                  在地址栏输入 <code>chrome://extensions</code>。
-                </p>
-              </div>
+              <h3 data-i18n="step1Title">选中你想复刻的 UI</h3>
+              <p data-i18n="step1Copy">按 <code>Alt+Shift+S</code> 开始选择，也可以点击扩展图标。</p>
             </article>
             <article class="step">
               <div class="step-number">02</div>
-              <div>
-                <h3 data-i18n="step2Title">开启开发者模式</h3>
-                <p data-i18n="step2Copy">
-                  打开页面右上角的“开发者模式”，显示本地扩展操作。
-                </p>
-              </div>
+              <h3 data-i18n="step2Title">让浏览器拆解它</h3>
+              <p data-i18n="step2Copy">读取 DOM 子树、CSS、布局、状态和组件关系，并截取一张精确目标图。</p>
             </article>
             <article class="step">
               <div class="step-number">03</div>
-              <div>
-                <h3 data-i18n="step3Title">加载解压后的文件夹</h3>
-                <p data-i18n="step3Copy">
-                  点击“加载已解压的扩展程序”，选择从
-                  <code>stylelens.zip</code> 解压出的文件夹。
-                </p>
-              </div>
+              <h3 data-i18n="step3Title">复制 Prompt，开始构建</h3>
+              <p data-i18n="step3Copy">Vision 证据和 DOM Profile 合并后，Prompt 会在页面浮层中流式生成。</p>
             </article>
           </div>
         </section>
 
-        <aside class="reality-check" aria-label="Chrome installation note">
-          <div>
-            <strong data-i18n="realityTitle">关于安装</strong>
-            <p data-i18n="realityCopy">
-              Chrome 的扩展安装页不接受书签链接。请使用 ZIP
-              和“加载已解压的扩展程序”完成本地安装。
-            </p>
+        <section class="signal-section" id="signals" aria-labelledby="signals-title">
+          <div class="signal-heading">
+            <div>
+              <p class="section-label" data-i18n="signalsLabel">为什么更接近目标</p>
+              <h2 id="signals-title" data-i18n="signalsTitle">一张图，三层证据。</h2>
+            </div>
+            <p data-i18n="signalsIntro">截图负责看见外观，DOM 负责说明关系，Agent 负责把它们写成可执行的构建意图。</p>
           </div>
-          <span class="bookmark-note" data-i18n="localOnly">仅本地</span>
-        </aside>
-
-        <section class="project-info" aria-labelledby="project-info-title">
-          <div>
-            <p class="section-label" data-i18n="projectInfoLabel">项目开发</p>
-            <h2 id="project-info-title" data-i18n="projectInfoTitle">
-              本地优先，开源协作。
-            </h2>
-          </div>
-          <div>
-            <p class="project-info-copy" data-i18n="projectInfoCopy">
-              StyleLens 是一个本地运行的 Chrome MV3 扩展与 AI Prompt
-              分析工具。源码、服务和安装流程都围绕可控的本地开发环境组织。
-            </p>
-            <a
-              class="repository-link"
-              href="https://gitee.com/xxxlomg/shark-style-lens"
-              target="_blank"
-              rel="noreferrer"
-              aria-label="Open the StyleLens Gitee repository"
-            >
-              <span data-i18n="projectRepo">Gitee 源码仓库</span>
-              <span class="repository-url"
-                >gitee.com/xxxlomg/shark-style-lens</span
-              >
-              <span class="repository-arrow" aria-hidden="true">↗</span>
-            </a>
+          <div class="signals">
+            <article class="signal">
+              <span class="signal-label" data-i18n="signal1Label">视觉边界</span>
+              <h3 data-i18n="signal1Title">只看你选中的那一块。</h3>
+              <p data-i18n="signal1Copy">单张截图严格按照目标元素的 DOM 矩形裁剪，周边进度条和扩展 UI 不会抢走注意力。</p>
+              <span class="signal-code">captureVisibleTab → target PNG</span>
+            </article>
+            <article class="signal">
+              <span class="signal-label" data-i18n="signal2Label">结构关系</span>
+              <h3 data-i18n="signal2Title">组件不再只剩一个框。</h3>
+              <p data-i18n="signal2Copy">子组件、角色、布局和交互线索会随 DOM Profile 一起进入推理。</p>
+              <span class="signal-code">DOM tree + CSS facts</span>
+            </article>
+            <article class="signal">
+              <span class="signal-label" data-i18n="signal3Label">生成结果</span>
+              <h3 data-i18n="signal3Title">Prompt 更像一份施工图。</h3>
+              <p data-i18n="signal3Copy">Vision 结构化证据会被合并到 Agent 上下文，明确要求外观、功能和状态。</p>
+              <span class="signal-code">vision evidence + agent</span>
+            </article>
           </div>
         </section>
+
+        <aside class="reality-check" aria-label="Local installation note">
+          <div>
+            <strong data-i18n="realityTitle">本地运行，数据路径清楚。</strong>
+            <p data-i18n="realityCopy">扩展只请求本地 API。DeepSeek Key 保存在本机配置中，截图默认只在内存里处理；需要时可在扩展中保存 PNG。</p>
+          </div>
+          <a class="local-badge" href="/api/health" data-i18n="healthLink">检查 API</a>
+        </aside>
       </main>
 
       <footer>
-        <span data-i18n="footerName">StyleLens / 本地 UI 逆向分析</span>
-        <a href="/api/health" data-i18n="healthLink">检查本地 API</a>
+        <span data-i18n="footerName">StyleLens</span>
+        <span class="footer-meta">
+          <span data-i18n="footerDetail">Select UI. Build with intent.</span>
+          <span data-i18n="footerAuthor">作者：xxxlomg</span>
+          <a href="https://gitee.com/xxxlomg/shark-style-lens.git" target="_blank" rel="noreferrer" data-i18n="sourceLink">Gitee 源码</a>
+        </span>
       </footer>
     </div>
 
     <script>
       const translations = {
         zh: {
-          pageDescription:
-            "StyleLens 本地 Chrome 扩展安装页。下载 ZIP 后通过开发者模式加载。",
-          pageTitle: "StyleLens / 本地安装",
-          headerStatus: "本地构建",
-          eyebrow: "安装这个现场工具",
-          heroTitle: "网页到 UI brief",
-          heroAccent: "一键生成",
-          heroCopy: "选中元素，生成 UI prompt。",
-          heroNoteLocal: "本地运行",
-          heroNotePrivate: "页面不上传",
-          heroNoteInstall: "开发者模式",
-          installTitle: "安装 StyleLens",
-          installSubtitle: "下载 ZIP，通过 Chrome 的开发者模式加载。",
+          pageDescription: "StyleLens 是一个帮助你从网页 UI 反推出高保真重建 Prompt 的 Chrome 扩展。",
+          pageTitle: "StyleLens",
+          navInstall: "安装",
+          navWorkflow: "工作方式",
+          navSignals: "分析信号",
+          themeDark: "深色",
+          themeLight: "浅色",
+          eyebrow: "给网页装上一只眼睛",
+          heroTitleZhLine1: "看见网页 UI",
+          heroTitleZhLine2: "选中它，",
+          heroTitleZhLine3: "复刻它。",
+          heroTitle: "See the UI.",
+          heroAccent: "Select it. Rebuild it.",
+          heroCopy: "StyleLens 把你喜欢的网页组件拆成 DOM、样式、布局和视觉证据，再交给 AI 编程工具生成高保真重建 Prompt。",
+          heroCta: "查看安装步骤",
+          heroSecondary: "先看看怎么用",
+          heroFactLocal: "本地优先",
+          heroFactVisual: "精准截图",
+          heroFactPrompt: "流式 Prompt",
+          stageKicker: "选择仪器",
+          stageCopy: "移动鼠标，选中一个元素。剩下的交给分析器。",
+          stageBottomLeft: "DOM + Vision",
+          stageBottomRight: "准备检查",
+          installLabel: "开始使用",
+          installTitle: "三分钟，把它装进 Chrome。",
+          installIntro: "下载 ZIP，解压，在扩展程序页面加载文件夹。安装完成后，StyleLens 会出现在你的浏览器工具栏里。",
           packageDetail: "Chrome 开发者模式安装包",
-          packageLabel: "下载",
-          stageStatus: "下载 ZIP 后解压，再选择解压出的文件夹。",
-          previewTitle: "扩展程序",
-          previewMode: "开发者模式已开启",
-          previewAction: "加载已解压的扩展程序",
+          stageStatus: "下载后解压，再选择解压出的文件夹。",
           downloadZip: "下载 ZIP",
           copyUrl: "复制扩展页地址",
-          recommendedTitle: "Chrome 推荐的本地安装方式",
-          recommendedCopy:
-            "解压下载文件，然后选择文件夹中的“加载已解压的扩展程序”。",
-          developerMode: "开发者模式",
-          whyNotCrxTitle: "为什么不使用 CRX？",
-          whyNotCrx:
-            "标准 Chrome 对许多本地 CRX 安装要求 Chrome Web Store proof。本项目无法生成 Google 的私有签名，因此使用 ZIP 加载是可靠的方式。",
-          workflowLabel: "安装路径",
-          workflowTitle: "一个扩展，三步完成安装。",
-          workflowIntro:
-            "下载 ZIP，解压后在 Chrome 的扩展程序管理页加载文件夹。",
-          step1Title: "打开 Chrome 扩展程序管理页",
-          step1Copy: "在地址栏输入 <code>chrome://extensions</code>。",
-          step2Title: "开启开发者模式",
-          step2Copy: "打开页面右上角的“开发者模式”，显示本地扩展操作。",
-          step3Title: "加载解压后的文件夹",
-          step3Copy:
-            "点击“加载已解压的扩展程序”，选择从 <code>stylelens.zip</code> 解压出的文件夹。",
-          realityTitle: "关于安装",
-          realityCopy:
-            "Chrome 的扩展安装页不接受书签链接。请使用 ZIP 和“加载已解压的扩展程序”完成本地安装。",
-          localOnly: "仅本地",
-          projectInfoLabel: "项目开发",
-          projectInfoTitle: "本地优先，开源协作。",
-          projectInfoCopy:
-            "StyleLens 是一个本地运行的 Chrome MV3 扩展与 AI Prompt 分析工具。源码、服务和安装流程都围绕可控的本地开发环境组织。",
-          projectRepo: "Gitee 源码仓库",
-          footerName: "StyleLens / 本地 UI 逆向分析",
-          healthLink: "检查本地 API",
-          extensionsCopied: "已复制。请在地址栏粘贴 chrome://extensions。",
+          whyNotCrxTitle: "Why not CRX?",
+          whyNotCrx: "Chrome 对本地 CRX 文件存在签名限制。ZIP 加载是本地开发最稳定的方式。",
+          workflowLabel: "使用方式",
+          workflowTitle: "从一个元素，得到一份能用的 Prompt。",
+          workflowIntro: "它不会只看一张图。StyleLens 同时读取浏览器里的结构证据和精确目标截图。",
+          step1Title: "选中你想复刻的 UI",
+          step1Copy: "按 <code>Alt+Shift+S</code> 开始选择，也可以点击扩展图标。",
+          step2Title: "让浏览器拆解它",
+          step2Copy: "读取 DOM 子树、CSS、布局、状态和组件关系，并截取一张精确目标图。",
+          step3Title: "复制 Prompt，开始构建",
+          step3Copy: "Vision 证据和 DOM Profile 合并后，Prompt 会在页面浮层中流式生成。",
+          signalsLabel: "为什么更接近目标",
+          signalsTitle: "一张图，三层证据。",
+          signalsIntro: "截图负责看见外观，DOM 负责说明关系，Agent 负责把它们写成可执行的构建意图。",
+          signal1Label: "视觉边界",
+          signal1Title: "只看你选中的那一块。",
+          signal1Copy: "单张截图严格按照目标元素的 DOM 矩形裁剪，周边进度条和扩展 UI 不会抢走注意力。",
+          signal2Label: "结构关系",
+          signal2Title: "组件不再只剩一个框。",
+          signal2Copy: "子组件、角色、布局和交互线索会随 DOM Profile 一起进入推理。",
+          signal3Label: "生成结果",
+          signal3Title: "Prompt 更像一份施工图。",
+          signal3Copy: "Vision 结构化证据会被合并到 Agent 上下文，明确要求外观、功能和状态。",
+          realityTitle: "本地运行，数据路径清楚。",
+          realityCopy: "扩展只请求本地 API。DeepSeek Key 保存在服务端环境变量中，截图默认只在内存里处理。",
+          healthLink: "检查 API",
+          footerName: "StyleLens",
+          footerDetail: "选中 UI，带着意图开始构建。",
+          footerAuthor: "作者：xxxlomg",
+          sourceLink: "Gitee 源码",
+          extensionsCopied: "已复制，请在地址栏粘贴 chrome://extensions。",
           extensionsFallback: "请在地址栏输入 chrome://extensions。",
         },
         en: {
-          pageDescription:
-            "Local StyleLens Chrome extension installer. Download the ZIP and load it in Developer mode.",
-          pageTitle: "StyleLens / Local install",
-          headerStatus: "local build",
-          eyebrow: "Install the field tool",
-          heroTitle: "Web to UI brief",
-          heroAccent: "One click",
-          heroCopy: "Select an element. Get a UI prompt.",
-          heroNoteLocal: "runs locally",
-          heroNotePrivate: "no page upload",
-          heroNoteInstall: "developer mode",
-          installTitle: "Install StyleLens",
-          installSubtitle:
-            "Download the ZIP, then load it in Chrome Developer mode.",
+          pageDescription: "StyleLens turns selected web UI into a high-fidelity reconstruction prompt for AI coding tools.",
+          pageTitle: "StyleLens",
+          navInstall: "Install",
+          navWorkflow: "How it works",
+          navSignals: "Signals",
+          themeDark: "Dark",
+          themeLight: "Light",
+          eyebrow: "Give the web a second set of eyes",
+          heroTitleZhLine1: "看见网页 UI",
+          heroTitleZhLine2: "选中它，",
+          heroTitleZhLine3: "复刻它。",
+          heroTitle: "See the UI.",
+          heroAccent: "Select it. Rebuild it.",
+          heroCopy: "StyleLens turns a web component into DOM, style, layout, and visual evidence, then hands the result to an AI coding tool.",
+          heroCta: "View install steps",
+          heroSecondary: "See how it works",
+          heroFactLocal: "local first",
+          heroFactVisual: "exact crop",
+          heroFactPrompt: "streamed prompt",
+          stageKicker: "Selection instrument",
+          stageCopy: "Move across the page. Select one element. Let the analyzer do the rest.",
+          stageBottomLeft: "DOM + Vision",
+          stageBottomRight: "Ready to inspect",
+          installLabel: "Get started",
+          installTitle: "Three minutes to put it in Chrome.",
+          installIntro: "Download the ZIP, unpack it, and load the folder in Chrome's extension manager. StyleLens will be ready in your toolbar.",
           packageDetail: "Chrome Developer mode package",
-          packageLabel: "DOWNLOAD",
-          stageStatus:
-            "Download the ZIP, unpack it, then choose the extracted folder.",
-          previewTitle: "Extensions",
-          previewMode: "Developer mode on",
-          previewAction: "Load unpacked",
+          stageStatus: "Download the ZIP, unpack it, then choose the extracted folder.",
           downloadZip: "Download ZIP",
           copyUrl: "Copy extensions URL",
-          recommendedTitle: "Chrome's recommended local path",
-          recommendedCopy:
-            "Unzip the download, then choose the folder with “Load unpacked”.",
-          developerMode: "developer mode",
           whyNotCrxTitle: "Why not CRX?",
-          whyNotCrx:
-            "Standard Chrome requires a Chrome Web Store proof for many local CRX installs. This project cannot create Google's private signature, so ZIP loading is the dependable option.",
-          workflowLabel: "The install path",
-          workflowTitle: "One extension. Three steps.",
-          workflowIntro:
-            "Download the ZIP, unpack it, and load the folder in Chrome's extension manager.",
-          step1Title: "Open Chrome's extension manager",
-          step1Copy:
-            "Paste <code>chrome://extensions</code> into the address bar.",
-          step2Title: "Enable Developer mode",
-          step2Copy:
-            "Turn on “Developer mode” in the top-right corner to reveal local extension controls.",
-          step3Title: "Load the unzipped folder",
-          step3Copy:
-            "Click “Load unpacked” and choose the folder extracted from <code>stylelens.zip</code>.",
-          realityTitle: "About installation",
-          realityCopy:
-            "Chrome's extension manager does not install bookmark links. Use the ZIP and “Load unpacked” to install locally.",
-          localOnly: "local only",
-          projectInfoLabel: "Project development",
-          projectInfoTitle: "Local by design, open to collaboration.",
-          projectInfoCopy:
-            "StyleLens is a local Chrome MV3 extension and AI prompt analysis tool. Its source, service, and install flow are designed around a controllable local development environment.",
-          projectRepo: "Gitee repository",
-          footerName: "StyleLens / local UI reverse engineering",
-          healthLink: "Check local API",
-          extensionsCopied:
-            "Copied. Paste chrome://extensions into the address bar.",
+          whyNotCrx: "Chrome applies signature restrictions to local CRX files. ZIP loading is the dependable path for local development.",
+          workflowLabel: "The workflow",
+          workflowTitle: "From one element to a prompt you can build with.",
+          workflowIntro: "It does not rely on one picture. StyleLens reads browser structure alongside one exact target crop.",
+          step1Title: "Select the UI you want",
+          step1Copy: "Press <code>Alt+Shift+S</code> to start selecting, or click the extension icon.",
+          step2Title: "Let the browser unpack it",
+          step2Copy: "Read the DOM tree, CSS, layout, states, and component relationships, then capture one exact target image.",
+          step3Title: "Copy the prompt and build",
+          step3Copy: "Vision evidence joins the DOM Profile, and the prompt streams into the page overlay.",
+          signalsLabel: "Why it gets closer",
+          signalsTitle: "One image. Three layers of evidence.",
+          signalsIntro: "The crop sees appearance. The DOM explains relationships. The Agent turns both into buildable intent.",
+          signal1Label: "Visual boundary",
+          signal1Title: "Only the piece you selected.",
+          signal1Copy: "The single image is cropped to the target DOM rectangle, so progress bars and extension UI stay out of the model's way.",
+          signal2Label: "Structure",
+          signal2Title: "A component is more than a box.",
+          signal2Copy: "Children, roles, layout, and interaction clues travel with the DOM Profile into reasoning.",
+          signal3Label: "Output",
+          signal3Title: "A prompt that reads like a build sheet.",
+          signal3Copy: "Structured Vision evidence joins the Agent context and calls out appearance, behavior, and states.",
+          realityTitle: "Local by design. Clear data paths.",
+          realityCopy: "The extension only calls the local API. The DeepSeek key stays in local configuration, and screenshots stay in memory unless Save captures is enabled in the extension.",
+          healthLink: "Check API",
+          footerName: "StyleLens",
+          footerDetail: "Select UI. Build with intent.",
+          footerAuthor: "Built by xxxlomg",
+          sourceLink: "Gitee source",
+          extensionsCopied: "Copied. Paste chrome://extensions into the address bar.",
           extensionsFallback: "Type chrome://extensions into the address bar.",
         },
       };
@@ -1090,7 +1287,17 @@
       const pageTitleMeta = document.getElementById("page-title-meta");
       const stageStatus = document.getElementById("stage-status");
       const copyExtensionsUrl = document.getElementById("copy-extensions-url");
+      const heroStage = document.getElementById("hero-stage");
       const extensionsUrl = "chrome://extensions";
+
+      function applyTheme(theme) {
+        const nextTheme = theme === "light" ? "light" : "dark";
+        document.documentElement.dataset.theme = nextTheme;
+        document.querySelectorAll("[data-theme-mode]").forEach((button) => {
+          button.setAttribute("aria-pressed", String(button.dataset.themeMode === nextTheme));
+        });
+        localStorage.setItem("stylelens-theme", nextTheme);
+      }
 
       function applyLanguage(language) {
         const dictionary = translations[language];
@@ -1101,35 +1308,45 @@
           element.innerHTML = dictionary[element.dataset.i18n];
         });
         document.querySelectorAll("[data-language]").forEach((button) => {
-          button.setAttribute(
-            "aria-pressed",
-            String(button.dataset.language === language),
-          );
+          button.setAttribute("aria-pressed", String(button.dataset.language === language));
         });
         localStorage.setItem("stylelens-language", language);
       }
 
       document.querySelectorAll("[data-language]").forEach((button) => {
-        button.addEventListener("click", () =>
-          applyLanguage(button.dataset.language),
-        );
+        button.addEventListener("click", () => applyLanguage(button.dataset.language));
       });
 
-      applyLanguage(
-        localStorage.getItem("stylelens-language") === "en" ? "en" : "zh",
-      );
+      document.querySelectorAll("[data-theme-mode]").forEach((button) => {
+        button.addEventListener("click", () => applyTheme(button.dataset.themeMode));
+      });
+
+      applyLanguage(localStorage.getItem("stylelens-language") === "zh" ? "zh" : "en");
+      applyTheme(localStorage.getItem("stylelens-theme"));
 
       copyExtensionsUrl.addEventListener("click", async () => {
-        const dictionary =
-          translations[document.documentElement.lang === "en" ? "en" : "zh"];
+        const dictionary = translations[document.documentElement.lang === "en" ? "en" : "zh"];
         try {
           await navigator.clipboard.writeText(extensionsUrl);
-          stageStatus.classList.add("is-active");
           stageStatus.textContent = dictionary.extensionsCopied;
+          stageStatus.style.borderLeftColor = "var(--accent-strong)";
         } catch {
-          stageStatus.classList.remove("is-active");
           stageStatus.textContent = dictionary.extensionsFallback;
+          stageStatus.style.borderLeftColor = "var(--line-bright)";
         }
+      });
+
+      heroStage.addEventListener("pointermove", (event) => {
+        const rect = heroStage.getBoundingClientRect();
+        const x = ((event.clientX - rect.left) / rect.width - 0.5) * 14;
+        const y = ((event.clientY - rect.top) / rect.height - 0.5) * 14;
+        heroStage.style.setProperty("--pointer-x", `${x}px`);
+        heroStage.style.setProperty("--pointer-y", `${y}px`);
+      });
+
+      heroStage.addEventListener("pointerleave", () => {
+        heroStage.style.setProperty("--pointer-x", "0px");
+        heroStage.style.setProperty("--pointer-y", "0px");
       });
     </script>
   </body>

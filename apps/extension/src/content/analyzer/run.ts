@@ -6,7 +6,7 @@ import { cancelActivePrompt } from '../selector/lock'
 import { buildProfile, type BuildOptions } from './profile-builder'
 
 /**
- * 分析运行器：ANALYSIS_START → 采集构建 StyleProfile → STYLE_PROFILE_READY → PROFILE_READY。
+ * 分析运行器：ANALYSIS_START → 采集构建 StyleProfile → STYLE_PROFILE_READY。
  * （§68 Sprint 3 交付物：对 fixtures 生成完整 StyleProfile）
  */
 export async function runAnalysis(target: SelectedElement): Promise<void> {
@@ -14,6 +14,8 @@ export async function runAnalysis(target: SelectedElement): Promise<void> {
   analysis.setStatus('analyzing')
   analysis.setProgress(5)
   analysis.resetPrompt()
+  analysis.resetReasoning()
+  analysis.setProfile(undefined)
   analysis.setError(undefined)
   // 新分析覆盖旧流（若上一轮 Prompt 仍在流式）
   cancelActivePrompt()
@@ -51,8 +53,10 @@ export async function runAnalysis(target: SelectedElement): Promise<void> {
       console.error('[StyleLens][Bridge] profile:send-failed', {
         error: error instanceof Error ? error.message : String(error),
       })
+      dispatchUi({ type: 'FAIL' })
+      analysis.setStatus('error')
+      return
     }
-    dispatchUi({ type: 'PROFILE_READY' }) // analyzing → generating（streaming）
   } catch (err) {
     console.error('[StyleLens] analysis failed', err)
     dispatchUi({ type: 'FAIL' })

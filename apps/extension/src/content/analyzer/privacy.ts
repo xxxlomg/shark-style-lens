@@ -8,6 +8,8 @@ const EMAIL_RE = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g
 const PHONE_RE = /(\+?\d[\d\s-]{7,}\d)/g
 const URL_TOKEN_RE =
   /([?&](?:token|key|secret|auth|api[_-]?key|password|access[_-]?token|signature|code)=)[^&\s]*/gi
+const SENSITIVE_VISIBLE_TEXT_RE =
+  /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}|\+?\d[\d\s-]{7,}\d|(?:[?&](?:token|key|secret|auth|api[_-]?key|password|access[_-]?token|signature|code)=)[^&\s]*/i
 
 /** 文本限长 + 明显 PII 过滤（§7） */
 export function sanitizeText(text: string): string {
@@ -19,6 +21,27 @@ export function sanitizeText(text: string): string {
     .trim()
   if (t.length > MAX_TEXT) t = `${t.slice(0, MAX_TEXT)}…`
   return t
+}
+
+/** True when rendered text is likely to expose a credential or direct PII. */
+export function containsSensitiveText(text: string): boolean {
+  return SENSITIVE_VISIBLE_TEXT_RE.test(text)
+}
+
+/** CSS values may contain remote, data, blob, or signed asset URLs. Keep the
+ * declaration shape for visual reasoning, but never forward the URL itself. */
+export function sanitizeCssValue(value: string): string {
+  return value.replace(/url\(\s*(?:"[^"]*"|'[^']*'|[^)]*)\s*\)/gi, 'url([redacted])')
+}
+
+/** Keep stylesheet provenance useful without forwarding query-string tokens. */
+export function sanitizeReferenceUrl(value: string): string {
+  try {
+    const parsed = new URL(value, window.location.href)
+    return `${parsed.origin}${parsed.pathname}`
+  } catch {
+    return '[redacted-url]'
+  }
 }
 
 /** 永不采集的 attribute 名（input value / 密码 / 敏感 aria） */

@@ -3,7 +3,7 @@ import { getPanelPosition, setPanelPosition } from '../bridge/storage'
 import { cancelActivePrompt, clearTarget, startAnalysis } from '../selector/lock'
 import { dispatchUi } from '../state/ui-controller'
 import { useAnalysisStore, useOverlayStore, useSelectionStore } from '../state/stores'
-import { controlPosition } from './SelectionControl'
+import { controlPosition } from './control-position'
 import { BrandMark } from '../../shared/BrandMark'
 
 const PANEL_W = 380
@@ -24,7 +24,9 @@ const PHASES = [
 export function PromptPanel() {
   const status = useAnalysisStore((s) => s.status)
   const progress = useAnalysisStore((s) => s.progress)
+  const profile = useAnalysisStore((s) => s.profile)
   const prompt = useAnalysisStore((s) => s.prompt)
+  const reasoning = useAnalysisStore((s) => s.reasoning)
   const error = useAnalysisStore((s) => s.error)
   const target = useSelectionStore((s) => s.target)
   const setPosition = useOverlayStore((s) => s.setPosition)
@@ -75,7 +77,7 @@ export function PromptPanel() {
     if (el && followScrollRef.current) {
       el.scrollTop = el.scrollHeight
     }
-  }, [prompt, status])
+  }, [prompt, reasoning, status])
 
   const onScroll = () => {
     const el = scrollRef.current
@@ -178,7 +180,7 @@ export function PromptPanel() {
           StyleLens
         </span>
         <div className="flex items-center gap-2">
-          <span className="rounded-full bg-indigo-500/30 px-2 py-0.5 text-[10px] text-indigo-200">
+          <span className="rounded-full bg-emerald-500/30 px-2 py-0.5 text-[10px] text-emerald-200">
             {badgeText}
           </span>
           <button
@@ -201,21 +203,23 @@ export function PromptPanel() {
               <li
                 key={phase.key}
                 className={`flex items-center gap-2 text-xs ${
-                  idx < currentPhaseIdx ? 'text-indigo-300' : 'text-slate-400'
+                  idx < currentPhaseIdx ? 'text-emerald-300' : 'text-slate-400'
                 }`}
               >
                 <span
                   className={`inline-block h-1.5 w-1.5 rounded-full ${
-                    idx < currentPhaseIdx ? 'bg-indigo-400' : 'bg-slate-600'
+                    idx < currentPhaseIdx ? 'bg-emerald-400' : 'bg-slate-600'
                   }`}
                 />
-                {phase.label}
+                {phase.key === 'building-profile' && profile
+                  ? 'Analyzing visual evidence…'
+                  : phase.label}
               </li>
             ))}
           </ul>
           <div className="mt-3 h-1 overflow-hidden rounded bg-slate-700">
             <div
-              className="h-full rounded bg-indigo-500 transition-all"
+              className="h-full rounded bg-emerald-500 transition-all"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -228,10 +232,20 @@ export function PromptPanel() {
           onScroll={onScroll}
           className="flex-1 overflow-y-auto px-4 py-3 text-xs leading-relaxed whitespace-pre-wrap"
         >
-          {prompt.length === 0 && <p className="text-slate-400">Generating prompt…</p>}
-          <span className="font-mono text-slate-200">{prompt}</span>
+          {reasoning.length > 0 && (
+            <section className="mb-3 border-b border-white/10 pb-3">
+              <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-emerald-300">
+                Thinking
+              </p>
+              <span className="font-mono text-slate-400">{reasoning}</span>
+            </section>
+          )}
+          {prompt.length === 0 && reasoning.length === 0 && (
+            <p className="text-slate-400">Generating prompt…</p>
+          )}
+          {prompt.length > 0 && <span className="font-mono text-slate-200">{prompt}</span>}
           {streaming && (
-            <span className="ml-0.5 inline-block h-3 w-1.5 animate-pulse bg-indigo-400" />
+            <span className="ml-0.5 inline-block h-3 w-1.5 animate-pulse bg-emerald-400" />
           )}
         </div>
       )}
@@ -243,7 +257,7 @@ export function PromptPanel() {
             <button
               type="button"
               onClick={retry}
-              className="rounded-md bg-indigo-500 px-3 py-1 text-xs font-semibold hover:bg-indigo-400"
+              className="rounded-md bg-emerald-500 px-3 py-1 text-xs font-semibold hover:bg-emerald-400"
             >
               Retry
             </button>
@@ -293,8 +307,8 @@ export function PromptPanel() {
             complete
               ? copied
                 ? 'bg-emerald-500 text-white'
-                : 'bg-indigo-500 text-white hover:bg-indigo-400'
-              : 'cursor-not-allowed bg-indigo-500/40 text-indigo-200'
+                : 'bg-emerald-500 text-white hover:bg-emerald-400'
+              : 'cursor-not-allowed bg-emerald-500/40 text-emerald-200'
           }`}
         >
           {copied ? 'Copied ✓' : 'Copy Prompt'}

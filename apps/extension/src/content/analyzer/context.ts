@@ -1,6 +1,14 @@
-import type { ComponentInference, ResponsiveProfile } from '../../shared/schemas/style-profile'
+import type {
+  ComponentInference,
+  PageContext,
+  ResponsiveProfile,
+} from '../../shared/schemas/style-profile'
 
 const SEMANTIC_KINDS: Record<string, string> = {
+  button: 'button',
+  fieldset: 'fieldset',
+  label: 'label',
+  li: 'list-item',
   article: 'article',
   section: 'section',
   nav: 'navigation',
@@ -19,6 +27,7 @@ const CLASS_HINTS: Array<[RegExp, string]> = [
   [/toolbar|bar/i, 'toolbar'],
   [/modal|dialog|popover/i, 'modal'],
   [/form/i, 'form'],
+  [/composer|input|editor|surface/i, 'input-composer'],
   [/badge|pill|chip|tag/i, 'badge'],
   [/list|menu/i, 'list'],
   [/hero|banner/i, 'hero'],
@@ -29,6 +38,187 @@ interface BoundaryCandidate {
   kind: string
   score: number
   evidence: string[]
+}
+
+export interface ComponentRootResolution {
+  root: HTMLElement
+  kind: string
+  confidence: number
+  evidence: string[]
+  distance: number
+}
+
+interface RootCandidate extends BoundaryCandidate {
+  distance: number
+}
+
+function isOpaque(value: string): boolean {
+  return !value || value === 'transparent' || value === 'rgba(0, 0, 0, 0)'
+}
+
+function interactiveDescendantCount(el: HTMLElement): number {
+  const descendants = el.querySelectorAll(
+    'button, input, textarea, select, a[href], [role="button"], [role="combobox"], [contenteditable="true"], [tabindex]:not([tabindex="-1"])',
+  ).length
+  const self = el.matches(
+    'button, input, textarea, select, a[href], [role="button"], [role="combobox"], [contenteditable="true"], [tabindex]:not([tabindex="-1"])',
+  )
+    ? 1
+    : 0
+  return descendants + self
+}
+
+function areaOf(el: HTMLElement): number {
+  const rect = el.getBoundingClientRect()
+  return Math.max(0, rect.width) * Math.max(0, rect.height)
+}
+
+function rootPenalty(
+  node: HTMLElement,
+  selectedArea: number,
+): { value: number; evidence: string[] } {
+  const rect = node.getBoundingClientRect()
+  const viewportArea = Math.max(1, window.innerWidth * window.innerHeight)
+  const ratio = areaOf(node) / viewportArea
+  const expansion = selectedArea > 0 ? areaOf(node) / selectedArea : 1
+  const evidence: string[] = []
+  let value = 0
+
+  // A component root should not silently expand to a page section or shell.
+  if (ratio > 0.85) {
+    value += 6
+    evidence.push('page-scale-area-penalty')
+  } else if (ratio > 0.65) {
+    value += 3
+    evidence.push('large-area-penalty')
+  }
+  if (expansion > 120) {
+    value += 3
+    evidence.push('excessive-selection-expansion')
+  } else if (expansion > 60) {
+    value += 1
+    evidence.push('wide-selection-expansion')
+  }
+  if (rect.width >= window.innerWidth * 0.9 || rect.height >= window.innerHeight * 0.9) {
+    value += 2
+    evidence.push('viewport-spanning-penalty')
+  }
+  return { value, evidence }
+}
+
+function scoreComponentRoot(node: HTMLElement): {
+  value: number
+  evidence: string[]
+  kind: string
+} {
+  const cs = getComputedStyle(node)
+  const evidence: string[] = []
+  let value = 0
+  const tag = node.tagName.toLowerCase()
+
+  if (!isOpaque(cs.backgroundColor) || (cs.backgroundImage && cs.backgroundImage !== 'none')) {
+    value += 2
+    evidence.push('visual-enclosure')
+  }
+  if (cs.borderTopWidth !== '0px' && cs.borderTopStyle !== 'none') {
+    value += 2
+    evidence.push('border-enclosure')
+  }
+  if ([cs.paddingTop, cs.paddingRight, cs.paddingBottom, cs.paddingLeft].some((v) => v !== '0px')) {
+    value += 1
+    evidence.push('padding-container')
+  }
+  if (cs.borderTopLeftRadius !== '0px') {
+    value += 1
+    evidence.push('rounded-surface')
+  }
+  if (cs.display === 'flex' || cs.display === 'grid') {
+    value += 2
+    evidence.push('layout-container')
+  }
+  if (node.children.length >= 2) {
+    value += 1
+    evidence.push('multiple-children')
+  }
+  const controls = interactiveDescendantCount(node)
+  if (controls >= 2) {
+    value += 2
+    evidence.push(`interactive-descendants:${controls}`)
+  } else if (controls === 1) {
+    value += 1
+    evidence.push('interactive-descendant')
+  }
+  if (SEMANTIC_KINDS[tag]) {
+    value += 2
+    evidence.push(`semantic-tag:${tag}`)
+  }
+
+  let kind = SEMANTIC_KINDS[tag] ?? (tag === 'div' ? 'container' : tag)
+  for (const [re, hintedKind] of CLASS_HINTS) {
+    if (Array.from(node.classList).some((className) => re.test(className))) {
+      value += 2
+      evidence.push(`class-hint:${hintedKind}`)
+      kind = hintedKind
+      break
+    }
+  }
+  return { value, evidence, kind }
+}
+
+/** Resolve a bounded, evidence-backed component root for component scope. */
+export function resolveComponentRoot(el: HTMLElement, maxDepth = 6): ComponentRootResolution {
+  const candidates: RootCandidate[] = []
+  let node: HTMLElement | null = el
+  let distance = 0
+  const selectedArea = areaOf(el)
+
+  while (node && node !== document.body && distance <= maxDepth) {
+    const scored = scoreComponentRoot(node)
+    const descendantControls = interactiveDescendantCount(node)
+    const compositeShape =
+      distance > 0 ||
+      node.children.length >= 2 ||
+      descendantControls >= 2 ||
+      Boolean(SEMANTIC_KINDS[node.tagName.toLowerCase()])
+    const penalty = rootPenalty(node, selectedArea)
+    const tag = node.tagName.toLowerCase()
+    const semanticPenalty = tag === 'main' || tag === 'section' ? 1 : 0
+    const score = scored.value - penalty.value - semanticPenalty - distance * 0.25
+    if (scored.value >= 4 && compositeShape && penalty.value < 6) {
+      candidates.push({
+        ...scored,
+        el: node,
+        score,
+        distance,
+        evidence: [
+          ...scored.evidence,
+          ...penalty.evidence,
+          ...(semanticPenalty ? ['page-region-penalty'] : []),
+        ],
+      })
+    }
+    node = node.parentElement
+    distance += 1
+  }
+
+  const best = candidates.sort((a, b) => b.score - a.score || a.distance - b.distance)[0]
+  if (!best) {
+    return {
+      root: el,
+      kind: el.tagName.toLowerCase(),
+      confidence: 0.35,
+      evidence: ['selected-element-fallback'],
+      distance: 0,
+    }
+  }
+
+  return {
+    root: best.el,
+    kind: best.kind,
+    confidence: Math.max(0.35, Math.min(0.98, 0.48 + best.score * 0.07 - best.distance * 0.01)),
+    evidence: best.evidence,
+    distance: best.distance,
+  }
 }
 
 /** Component Boundary 推断（§6 / §59.3）：信号评分，输出候选而非结论 */
@@ -128,8 +318,8 @@ export function collectOuterLayoutContext(el: HTMLElement, max = 3): string[] {
   return out
 }
 
-/** Theme / Responsive 上下文（§21 / §22） */
-export function analyzeThemeResponsive(): ResponsiveProfile {
+/** Theme / Responsive 上下文（§21 / §22）；page 为 T2 页面主题检测结果，优先于 prefers-color-scheme */
+export function analyzeThemeResponsive(page?: PageContext): ResponsiveProfile {
   const dark = window.matchMedia('(prefers-color-scheme: dark)').matches
   const root = getComputedStyle(document.documentElement)
   const body = getComputedStyle(document.body)
@@ -174,7 +364,9 @@ export function analyzeThemeResponsive(): ResponsiveProfile {
     body.backgroundColor && body.backgroundColor !== 'rgba(0, 0, 0, 0)'
       ? 'colored surface'
       : 'neutral surface'
-  const themeSummary = `${dark ? 'dark' : 'light'} theme, ${surface}${accentToken ? `, ${accentToken} accent` : ''}`
+  const scheme = page?.scheme && page.scheme !== 'unknown' ? page.scheme : dark ? 'dark' : 'light'
+  const surfaceDesc = page?.pageBackground ? `page background ${page.pageBackground}` : surface
+  const themeSummary = `${scheme} theme, ${surfaceDesc}${accentToken ? `, ${accentToken} accent` : ''}`
 
   return {
     viewport: { width: window.innerWidth, height: window.innerHeight },

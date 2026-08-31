@@ -30,7 +30,7 @@ function isInsideIframe(el: HTMLElement): boolean {
   return Boolean(win && win !== window)
 }
 
-function summaryOf(el: HTMLElement, depth: number): DOMNodeSummary {
+function summaryOf(el: HTMLElement): DOMNodeSummary {
   const rect = el.getBoundingClientRect()
   return {
     uid: uidFor(el),
@@ -54,13 +54,18 @@ function summaryOf(el: HTMLElement, depth: number): DOMNodeSummary {
   }
 }
 
-function snapshotOf(el: HTMLElement, depth: number, parentUid?: string): DOMNodeSnapshot {
+function snapshotOf(
+  el: HTMLElement,
+  depth: number,
+  parentUid?: string,
+  uid = uidFor(el),
+): DOMNodeSnapshot {
   const attrs: Record<string, string> = {}
   for (const attr of el.attributes) {
     attrs[attr.name] = attr.value
   }
   return {
-    uid: uidFor(el),
+    uid,
     parentUid,
     tagName: el.tagName.toLowerCase(),
     role: el.getAttribute('role') ?? undefined,
@@ -92,11 +97,12 @@ export function collectDom(el: HTMLElement, options: DomOptions = {}): DomCollec
   let parent = el.parentElement
   let depth = -1
   while (parent && -depth <= opts.maxAncestorDepth) {
+    // Register the node before its parent so generated UIDs remain stable for
+    // the parentUid reference in the bounded DOM snapshot.
     const uid = uidFor(parent)
-    domTree.push(
-      snapshotOf(parent, depth, parent.parentElement ? uidFor(parent.parentElement) : undefined),
-    )
-    ancestors.push(summaryOf(parent, depth))
+    const parentUid = parent.parentElement ? uidFor(parent.parentElement) : undefined
+    domTree.push(snapshotOf(parent, depth, parentUid, uid))
+    ancestors.push(summaryOf(parent))
     parent = parent.parentElement
     depth -= 1
   }
@@ -112,7 +118,7 @@ export function collectDom(el: HTMLElement, options: DomOptions = {}): DomCollec
   const parentEl = el.parentElement
   if (parentEl) {
     const sibs = Array.from(parentEl.children).filter((c) => c !== el)
-    sibs.slice(0, opts.maxSiblings).forEach((s) => siblings.push(summaryOf(s as HTMLElement, -1)))
+    sibs.slice(0, opts.maxSiblings).forEach((s) => siblings.push(summaryOf(s as HTMLElement)))
     if (sibs.length > opts.maxSiblings) {
       warnings.push({
         code: 'TREE_TRUNCATED',
@@ -126,8 +132,8 @@ export function collectDom(el: HTMLElement, options: DomOptions = {}): DomCollec
   const kids = Array.from(el.children) as HTMLElement[]
   kids.slice(0, opts.maxChildren).forEach((child) => {
     const childUid = uidFor(child)
-    domTree.push(snapshotOf(child, 1, targetUid))
-    children.push(summaryOf(child, 1))
+    domTree.push(snapshotOf(child, 1, targetUid, childUid))
+    children.push(summaryOf(child))
   })
   if (kids.length > opts.maxChildren) {
     warnings.push({

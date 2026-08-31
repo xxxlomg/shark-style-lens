@@ -8,6 +8,7 @@
  *  - Phase 2 扩展位（matchedRules / inheritedStyles / diagnostics）首版不含
  */
 import { z } from 'zod'
+import { visionEvidenceSchema } from './vision-evidence'
 
 /* ---------- 2. 通用基础类型 ---------- */
 
@@ -49,6 +50,7 @@ export type ColorInfo = z.infer<typeof colorInfoSchema>
 
 export const targetInfoSchema = z.object({
   uid: z.string(),
+  selectedUid: z.string().optional(),
   tagName: z.string(),
   role: z.string().optional(),
   id: z.string().optional(),
@@ -69,6 +71,9 @@ export const componentInferenceSchema = z.object({
   kind: z.string(),
   confidence: z.number().min(0).max(1),
   evidence: z.array(z.string()),
+  rootUid: z.string().optional(),
+  rootTagName: z.string().optional(),
+  rootClasses: z.array(z.string()).optional(),
 })
 export type ComponentInference = z.infer<typeof componentInferenceSchema>
 
@@ -197,10 +202,23 @@ export const backgroundInfoSchema = z.object({
 })
 export type BackgroundInfo = z.infer<typeof backgroundInfoSchema>
 
+const borderSideSchema = z.object({
+  width: z.string(),
+  style: z.string(),
+  color: colorInfoSchema,
+})
 export const borderInfoSchema = z.object({
   width: z.string(),
   style: z.string(),
   color: colorInfoSchema,
+  sides: z
+    .object({
+      top: borderSideSchema,
+      right: borderSideSchema,
+      bottom: borderSideSchema,
+      left: borderSideSchema,
+    })
+    .optional(),
 })
 export type BorderInfo = z.infer<typeof borderInfoSchema>
 
@@ -229,6 +247,13 @@ export const pseudoElementInfoSchema = z.object({
   content: z.string().optional(),
   display: z.string(),
   size: sizeSchema.optional(),
+  position: z.string().optional(),
+  backgroundSize: z.string().optional(),
+  borderRadius: z.string().optional(),
+  boxShadow: z.string().optional(),
+  transform: z.string().optional(),
+  clipPath: z.string().optional(),
+  opacity: z.number().min(0).max(1).optional(),
   background: backgroundInfoSchema.optional(),
   color: colorInfoSchema.optional(),
   inferredPurpose: z.string().optional(),
@@ -242,6 +267,13 @@ export const visualProfileSchema = z.object({
   radius: radiusInfoSchema.optional(),
   shadows: z.array(shadowInfoSchema),
   opacity: z.number().optional(),
+  effectiveOpacity: z.number().min(0).max(1).optional(),
+  transform: z.string().optional(),
+  transformOrigin: z.string().optional(),
+  clipPath: z.string().optional(),
+  maskImage: z.string().optional(),
+  mixBlendMode: z.string().optional(),
+  isolation: z.string().optional(),
   backdropFilter: z.string().optional(),
   filter: z.string().optional(),
   pseudoElements: z.array(pseudoElementInfoSchema),
@@ -288,6 +320,7 @@ export const uiStateSchema = z.enum([
   'checked',
   'selected',
   'expanded',
+  'pressed',
 ])
 export type UIState = z.infer<typeof uiStateSchema>
 
@@ -347,7 +380,144 @@ export const cssVariableUsageSchema = z.object({
 })
 export type CSSVariableUsage = z.infer<typeof cssVariableUsageSchema>
 
-/* ---------- 17. PromptOptions ---------- */
+export const matchedRuleSchema = z.object({
+  selector: z.string(),
+  stylesheetUrl: z.string().optional(),
+  media: z.string().optional(),
+  properties: z.record(z.string(), z.string()),
+  accessible: z.boolean(),
+})
+export type MatchedRule = z.infer<typeof matchedRuleSchema>
+
+/* ---------- 16. SubtreeNode（子树深度解析，保真度提升 T1） ---------- */
+
+export const subtreeRoleSchema = z.enum([
+  'text',
+  'button',
+  'icon',
+  'input',
+  'control',
+  'badge',
+  'image',
+  'toolbar',
+  'divider',
+  'link',
+  'container',
+])
+export type SubtreeRole = z.infer<typeof subtreeRoleSchema>
+
+export const subtreeRectSchema = z.object({
+  x: z.number(),
+  y: z.number(),
+  width: z.number(),
+  height: z.number(),
+})
+export type SubtreeRect = z.infer<typeof subtreeRectSchema>
+
+export const subtreeTypographySchema = z.object({
+  fontSize: z.string(),
+  fontWeight: z.string(),
+  lineHeight: z.string(),
+})
+export type SubtreeTypography = z.infer<typeof subtreeTypographySchema>
+
+export const subtreeStateSchema = z.object({
+  disabled: z.boolean().optional(),
+  expanded: z.boolean().optional(),
+  selected: z.boolean().optional(),
+  checked: z.boolean().optional(),
+  pressed: z.boolean().optional(),
+  indeterminate: z.boolean().optional(),
+  current: z.string().optional(),
+})
+export type SubtreeState = z.infer<typeof subtreeStateSchema>
+
+export const subtreeControlSchema = z.object({
+  kind: z.string(),
+  type: z.string().optional(),
+  placeholder: z.string().optional(),
+  title: z.string().optional(),
+  valuePresent: z.boolean().optional(),
+})
+export type SubtreeControl = z.infer<typeof subtreeControlSchema>
+
+export interface SubtreeNode {
+  uid: string
+  parentUid?: string
+  childIndex?: number
+  depth?: number
+  tagName: string
+  roleGuess: SubtreeRole
+  semanticRole?: string
+  interactive?: boolean
+  visibilityState?: 'visible' | 'opacity-zero'
+  effectiveOpacity?: number
+  actionHint?: string
+  state?: SubtreeState
+  attributes?: Record<string, string>
+  control?: SubtreeControl
+  rect?: SubtreeRect
+  computed?: Record<string, string>
+  layout?: string
+  background?: string
+  color?: string
+  border?: string
+  radius?: string
+  shadow?: string
+  typography?: SubtreeTypography
+  pseudoElements?: PseudoElementInfo[]
+  textContent?: string
+  children: SubtreeNode[]
+}
+
+export const subtreeNodeSchema: z.ZodType<SubtreeNode> = z.lazy(() =>
+  z.object({
+    uid: z.string(),
+    parentUid: z.string().optional(),
+    childIndex: z.number().int().nonnegative().optional(),
+    depth: z.number().int().nonnegative().optional(),
+    tagName: z.string(),
+    roleGuess: subtreeRoleSchema,
+    semanticRole: z.string().optional(),
+    interactive: z.boolean().optional(),
+    visibilityState: z.enum(['visible', 'opacity-zero']).optional(),
+    effectiveOpacity: z.number().min(0).max(1).optional(),
+    actionHint: z.string().optional(),
+    state: subtreeStateSchema.optional(),
+    attributes: z.record(z.string(), z.string()).optional(),
+    control: subtreeControlSchema.optional(),
+    rect: subtreeRectSchema.optional(),
+    computed: z.record(z.string(), z.string()).optional(),
+    layout: z.string().optional(),
+    background: z.string().optional(),
+    color: z.string().optional(),
+    border: z.string().optional(),
+    radius: z.string().optional(),
+    shadow: z.string().optional(),
+    typography: subtreeTypographySchema.optional(),
+    pseudoElements: z.array(pseudoElementInfoSchema).optional(),
+    textContent: z.string().optional(),
+    children: z.array(subtreeNodeSchema),
+  }),
+)
+
+/* ---------- 17. PageContext（页面主题与调色板，保真度提升 T2） ---------- */
+
+export const paletteEntrySchema = z.object({
+  hex: z.string(),
+  count: z.number(),
+  usage: z.string(),
+})
+export type PaletteEntry = z.infer<typeof paletteEntrySchema>
+
+export const pageContextSchema = z.object({
+  pageBackground: z.string().optional(),
+  scheme: z.enum(['dark', 'light', 'unknown']),
+  palette: z.array(paletteEntrySchema),
+})
+export type PageContext = z.infer<typeof pageContextSchema>
+
+/* ---------- 18. PromptOptions ---------- */
 
 export const targetFrameworkSchema = z.enum([
   'agnostic',
@@ -371,6 +541,7 @@ export type PromptOptions = z.infer<typeof promptOptionsSchema>
 
 export const styleProfileSchema = z.object({
   version: z.string(),
+  analysisScope: z.enum(['element', 'component']).optional(),
   target: targetInfoSchema,
   context: contextInfoSchema,
   structure: structureProfileSchema,
@@ -383,6 +554,11 @@ export const styleProfileSchema = z.object({
   states: z.array(stateProfileSchema),
   facts: z.array(styleFactSchema),
   inferences: z.array(inferenceSchema),
+  matchedRules: z.array(matchedRuleSchema).optional(),
+  cssVariables: z.array(cssVariableUsageSchema).optional(),
+  visionEvidence: visionEvidenceSchema.optional(),
+  componentTree: z.array(subtreeNodeSchema).optional(),
+  pageContext: pageContextSchema.optional(),
   warnings: z.array(analysisWarningSchema),
 })
 export type StyleProfile = z.infer<typeof styleProfileSchema>

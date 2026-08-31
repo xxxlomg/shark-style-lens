@@ -1,7 +1,8 @@
 import type { StyleFact } from '../../shared/schemas/style-profile'
+import { sanitizeCssValue } from './privacy'
 import { uidFor } from './uid'
 
-/** 高价值属性清单（§8.1 / §59.5：collect → rank，浏览器默认属性不发送） */
+/** 高价值属性清单（§8.1 / §59.5：collect → rank；显式 none/0 也保留）。 */
 export const KEY_PROPS = [
   'display',
   'position',
@@ -64,7 +65,16 @@ export const KEY_PROPS = [
   'box-shadow',
   'opacity',
   'transform',
+  'transform-origin',
+  'clip-path',
+  'mask-image',
+  'mix-blend-mode',
+  'will-change',
+  'isolation',
+  'contain',
   'overflow',
+  'overflow-x',
+  'overflow-y',
   'z-index',
   'visibility',
   'pointer-events',
@@ -75,14 +85,22 @@ export const KEY_PROPS = [
 
 export const DEFAULT_CSS_PROPS = new Set(['box-sizing', 'visibility', 'pointer-events', 'overflow'])
 
+const KEEP_NEUTRAL_PROPS = new Set([
+  'opacity',
+  'visibility',
+  'pointer-events',
+  'box-sizing',
+  'overflow',
+])
+
 /** 提取目标元素的高价值 computed 属性（§8.1） */
 export function extractComputedStyles(el: HTMLElement): Record<string, string> {
   const cs = getComputedStyle(el)
   const out: Record<string, string> = {}
   for (const prop of KEY_PROPS) {
     const value = cs.getPropertyValue(prop)
-    if (value && value !== 'none' && value !== 'auto' && value !== '0px' && value !== 'normal') {
-      out[prop] = value
+    if (value && (value !== 'normal' || KEEP_NEUTRAL_PROPS.has(prop))) {
+      out[prop] = sanitizeCssValue(value)
     }
   }
   return out
@@ -94,12 +112,16 @@ export function collectComputedFacts(el: HTMLElement, targetUid: string): StyleF
   const facts: StyleFact[] = []
   for (const prop of KEY_PROPS) {
     const value = cs.getPropertyValue(prop)
-    if (!value || value === 'none' || value === 'auto' || value === '0px' || value === 'normal') {
+    if (
+      !value ||
+      (value === 'normal' && !KEEP_NEUTRAL_PROPS.has(prop)) ||
+      ((value === 'none' || value === 'auto' || value === '0px') && !KEEP_NEUTRAL_PROPS.has(prop))
+    ) {
       continue
     }
     facts.push({
       property: prop,
-      value,
+      value: sanitizeCssValue(value),
       source: 'computed',
       confidence: 1,
       targetUid,

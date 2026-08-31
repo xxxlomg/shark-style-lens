@@ -15,7 +15,7 @@ export type UiEvent =
   | { type: 'ELEMENT_SELECTED' }
   | { type: 'RE_SELECT' }
   | { type: 'ANALYZE' }
-  | { type: 'PROFILE_READY' }
+  | { type: 'PROMPT_START' }
   | { type: 'PROMPT_COMPLETE' }
   | { type: 'FAIL' }
 
@@ -24,7 +24,7 @@ const TRANSITIONS: Record<UiState, Partial<Record<UiEvent['type'], UiState>>> = 
   selecting: { ELEMENT_SELECTED: 'selected', CANCEL: 'idle' },
   selected: { ANALYZE: 'analyzing', RE_SELECT: 'selecting', CANCEL: 'idle' },
   // 分析/流式中允许 RE_SELECT / CANCEL（中止并回到选择或空闲，配合 PROMPT_CANCEL 中止后端流）
-  analyzing: { PROFILE_READY: 'generating', FAIL: 'error', RE_SELECT: 'selecting', CANCEL: 'idle' },
+  analyzing: { PROMPT_START: 'generating', FAIL: 'error', RE_SELECT: 'selecting', CANCEL: 'idle' },
   generating: {
     PROMPT_COMPLETE: 'completed',
     FAIL: 'error',

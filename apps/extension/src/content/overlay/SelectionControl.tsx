@@ -1,14 +1,7 @@
 import type { SelectedElement } from '../../shared/schemas/messages'
 import { cancelActivePrompt, clearTarget, setTargetScope, startAnalysis } from '../selector/lock'
 import { dispatchUi } from '../state/ui-controller'
-
-/** 控制条定位（§4.2）：目标正下方，viewport clamp。PromptPanel 据此锚定，保证「跟手」 */
-export function controlPosition(target: SelectedElement): { left: number; top: number } {
-  return {
-    left: Math.max(4, Math.min(target.rect.left, window.innerWidth - 340)),
-    top: Math.min(target.rect.bottom + 8, window.innerHeight - 48),
-  }
-}
+import { controlPosition } from './control-position'
 
 /** 锁定态控制条（§4.2）：Analyze / Re-select / Element·Component 分段切换 */
 export function SelectionControl({ target }: { target: SelectedElement }) {
@@ -29,7 +22,7 @@ export function SelectionControl({ target }: { target: SelectedElement }) {
           type="button"
           className={`rounded px-2 py-0.5 transition-colors ${
             scope === 'element'
-              ? 'bg-indigo-500 font-semibold text-white'
+              ? 'bg-emerald-500 font-semibold text-white'
               : 'text-slate-300 hover:bg-white/10'
           }`}
           onClick={() => setTargetScope('element')}
@@ -40,7 +33,7 @@ export function SelectionControl({ target }: { target: SelectedElement }) {
           type="button"
           className={`rounded px-2 py-0.5 transition-colors ${
             scope === 'component'
-              ? 'bg-indigo-500 font-semibold text-white'
+              ? 'bg-emerald-500 font-semibold text-white'
               : 'text-slate-300 hover:bg-white/10'
           }`}
           onClick={() => setTargetScope('component')}
@@ -51,7 +44,7 @@ export function SelectionControl({ target }: { target: SelectedElement }) {
 
       <button
         type="button"
-        className="rounded-md bg-indigo-500 px-3 py-1 text-xs font-semibold hover:bg-indigo-400"
+        className="rounded-md bg-emerald-500 px-3 py-1 text-xs font-semibold hover:bg-emerald-400"
         onClick={() => {
           dispatchUi({ type: 'ANALYZE' })
           startAnalysis()

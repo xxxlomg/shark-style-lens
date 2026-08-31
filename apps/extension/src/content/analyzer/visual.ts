@@ -6,14 +6,57 @@ import type {
   ShadowInfo,
   VisualProfile,
 } from '../../shared/schemas/style-profile'
+import { sanitizeCssValue } from './privacy'
 
-function hexFromRgb(rgb: string): string {
-  const m = rgb.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/)
-  if (!m) return rgb
-  const toHex = (n: number) => n.toString(16).padStart(2, '0')
-  const alpha = m[4] ? Number.parseFloat(m[4]) : 1
-  const base = `#${toHex(Number(m[1]))}${toHex(Number(m[2]))}${toHex(Number(m[3]))}`
-  return alpha >= 1 ? base : `rgba(${m[1]}, ${m[2]}, ${m[3]}, ${alpha})`
+interface ParsedRgb {
+  channels: [number, number, number]
+  alpha: number
+}
+
+function parseCssChannel(value: string): number | undefined {
+  const parsed = Number.parseFloat(value.trim())
+  if (!Number.isFinite(parsed)) return undefined
+  return value.trim().endsWith('%') ? (parsed / 100) * 255 : parsed
+}
+
+function parseCssAlpha(value: string): number | undefined {
+  const parsed = Number.parseFloat(value.trim())
+  if (!Number.isFinite(parsed)) return undefined
+  const alpha = value.trim().endsWith('%') ? parsed / 100 : parsed
+  return Math.max(0, Math.min(1, alpha))
+}
+
+function parseRgbFunction(value: string): ParsedRgb | undefined {
+  const match = value.trim().match(/^rgba?\((.*)\)$/i)
+  if (!match) return undefined
+  const body = match[1].trim()
+  const slash = body.lastIndexOf('/')
+  const channelPart = slash >= 0 ? body.slice(0, slash).trim() : body
+  const alphaPart = slash >= 0 ? body.slice(slash + 1).trim() : undefined
+  const parts = channelPart.includes(',')
+    ? channelPart.split(',').map((part) => part.trim())
+    : channelPart.split(/\s+/)
+  if (parts.length < 3) return undefined
+  const channels = parts.slice(0, 3).map(parseCssChannel)
+  if (channels.some((channel) => channel === undefined)) return undefined
+  const commaAlpha = parts[3]
+  const alpha = alphaPart ? parseCssAlpha(alphaPart) : commaAlpha ? parseCssAlpha(commaAlpha) : 1
+  if (alpha === undefined) return undefined
+  return {
+    channels: channels.map((channel) =>
+      Math.max(0, Math.min(255, channel!)),
+    ) as ParsedRgb['channels'],
+    alpha,
+  }
+}
+
+export function hexFromRgb(rgb: string): string {
+  const parsed = parseRgbFunction(rgb)
+  if (!parsed) return rgb
+  const toHex = (value: number) => Math.round(value).toString(16).padStart(2, '0')
+  const [red, green, blue] = parsed.channels
+  const base = `#${toHex(red)}${toHex(green)}${toHex(blue)}`
+  return parsed.alpha >= 1 ? base : `rgba(${red}, ${green}, ${blue}, ${parsed.alpha})`
 }
 
 export function makeColorInfo(observed: string, token?: string): ColorInfo {
@@ -21,23 +64,55 @@ export function makeColorInfo(observed: string, token?: string): ColorInfo {
     observed,
     normalized: hexFromRgb(observed),
     token,
-    alpha: observed.startsWith('rgba')
-      ? Number.parseFloat(observed.match(/rgba?\([\d\s,]+([\d.]+)\)/)?.[1] ?? '1')
-      : undefined,
+    alpha: mAlpha(observed),
   }
+}
+
+function mAlpha(value: string): number | undefined {
+  return parseRgbFunction(value)?.alpha
+}
+
+function opacityOf(value: string): number {
+  const parsed = Number.parseFloat(value)
+  return Number.isFinite(parsed) ? Math.max(0, Math.min(1, parsed)) : 1
+}
+
+/** Effective composited opacity includes ancestor stacking contexts. */
+export function effectiveOpacityOf(el: HTMLElement): number {
+  let opacity = 1
+  let node: HTMLElement | null = el
+  while (node) {
+    opacity *= opacityOf(getComputedStyle(node).opacity)
+    node = node.parentElement
+  }
+  return opacity
 }
 
 /** 背景（§14）：颜色 / 渐变 / 图片 */
 export function analyzeBackground(el: HTMLElement, cs: CSSStyleDeclaration): BackgroundInfo {
   const image = cs.backgroundImage
   const color = cs.backgroundColor
+  const colorInfo =
+    color && !isTransparentColor(color)
+      ? { color: makeColorInfo(color, extractColorToken(el, color)) }
+      : {}
   if (image && image !== 'none') {
     if (image.includes('gradient')) {
-      return { kind: 'gradient', gradient: image, semanticDescription: 'Gradient surface' }
+      return {
+        kind: 'gradient',
+        gradient: sanitizeCssValue(image),
+        ...colorInfo,
+        semanticDescription: 'Gradient surface',
+      }
     }
-    return { kind: 'image', imageAssetUid: undefined, semanticDescription: 'Image-based surface' }
+    return {
+      kind: 'image',
+      imageAssetUid: undefined,
+      ...colorInfo,
+      semanticDescription: 'Image-based surface',
+    }
   }
-  if (color && color !== 'rgba(0, 0, 0, 0)' && color !== 'transparent') {
+  if (color && !isTransparentColor(color)) {
     const token = extractColorToken(el, color)
     return {
       kind: 'color',
@@ -48,12 +123,15 @@ export function analyzeBackground(el: HTMLElement, cs: CSSStyleDeclaration): Bac
   return { kind: 'none' }
 }
 
+function isTransparentColor(value: string): boolean {
+  return value === 'transparent' || mAlpha(value) === 0
+}
+
 /** 从目标及祖先的匹配规则中找颜色 token（§10 / §14） */
 export function extractColorToken(el: HTMLElement, observed: string): string | undefined {
   let node: HTMLElement | null = el
   let depth = 0
   while (node && depth < 4) {
-    const cs = getComputedStyle(node)
     const decls = node.style
     for (let i = 0; i < decls.length; i++) {
       const name = decls[i]
@@ -84,17 +162,29 @@ export function extractColorToken(el: HTMLElement, observed: string): string | u
 
 /** 边框（§15） */
 export function analyzeBorder(el: HTMLElement, cs: CSSStyleDeclaration): BorderInfo | undefined {
-  const width = cs.borderTopWidth
-  if (width === '0px' || (width === 'medium' && cs.borderTopStyle === 'none')) return undefined
+  const side = (prefix: 'Top' | 'Right' | 'Bottom' | 'Left') => ({
+    width: cs[`border${prefix}Width`],
+    style: cs[`border${prefix}Style`],
+    color: makeColorInfo(cs[`border${prefix}Color`]),
+  })
+  const sides = {
+    top: side('Top'),
+    right: side('Right'),
+    bottom: side('Bottom'),
+    left: side('Left'),
+  }
+  if (Object.values(sides).every(({ width, style }) => width === '0px' || style === 'none'))
+    return undefined
   return {
-    width,
-    style: cs.borderTopStyle,
-    color: makeColorInfo(cs.borderTopColor),
+    width: sides.top.width,
+    style: sides.top.style,
+    color: sides.top.color,
+    sides,
   }
 }
 
 /** 圆角（§15，逐角） */
-export function analyzeRadius(el: HTMLElement, cs: CSSStyleDeclaration): RadiusInfo | undefined {
+export function analyzeRadius(cs: CSSStyleDeclaration): RadiusInfo | undefined {
   const r = {
     topLeft: cs.borderTopLeftRadius,
     topRight: cs.borderTopRightRadius,
@@ -142,12 +232,21 @@ export function analyzeVisual(el: HTMLElement): VisualProfile {
     color: makeColorInfo(cs.color, extractColorToken(el, cs.color)),
     background: analyzeBackground(el, cs),
     border: analyzeBorder(el, cs),
-    radius: analyzeRadius(el, cs),
+    radius: analyzeRadius(cs),
     shadows: analyzeShadows(cs),
     opacity: cs.opacity !== '1' ? Number.parseFloat(cs.opacity) : undefined,
+    effectiveOpacity: effectiveOpacityOf(el),
+    transform: cs.transform !== 'none' ? sanitizeCssValue(cs.transform) : undefined,
+    transformOrigin: cs.transformOrigin !== '0px 0px' ? cs.transformOrigin : undefined,
+    clipPath: cs.clipPath !== 'none' ? sanitizeCssValue(cs.clipPath) : undefined,
+    maskImage: cs.maskImage !== 'none' ? sanitizeCssValue(cs.maskImage) : undefined,
+    mixBlendMode: cs.mixBlendMode !== 'normal' ? cs.mixBlendMode : undefined,
+    isolation: cs.isolation !== 'auto' ? cs.isolation : undefined,
     backdropFilter:
-      cs.backdropFilter && cs.backdropFilter !== 'none' ? cs.backdropFilter : undefined,
-    filter: cs.filter && cs.filter !== 'none' ? cs.filter : undefined,
+      cs.backdropFilter && cs.backdropFilter !== 'none'
+        ? sanitizeCssValue(cs.backdropFilter)
+        : undefined,
+    filter: cs.filter && cs.filter !== 'none' ? sanitizeCssValue(cs.filter) : undefined,
     pseudoElements: [],
   }
 }

@@ -5,16 +5,19 @@
   "type": "module",
   "scripts": {
     "build": "node scripts/build-extension.mjs && node scripts/package-extension.mjs",
+    "icons:generate": "node scripts/rasterize-icons.mjs",
     "package": "node scripts/package-extension.mjs",
     "dev": "vite",
     "lint": "oxlint . && prettier --check .",
     "lint:fix": "oxlint --fix . && prettier --write .",
     "test": "vitest run",
     "test:watch": "vitest",
+    "pretest:e2e": "pnpm build",
     "test:e2e": "playwright test",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@stylelens/contracts": "workspace:*",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.525.0",

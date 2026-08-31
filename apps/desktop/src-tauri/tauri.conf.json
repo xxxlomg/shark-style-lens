@@ -1,0 +1,45 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "StyleLens",
+  "version": "0.1.0",
+  "identifier": "com.shark.stylelens",
+  "build": {
+    "beforeDevCommand": "pnpm dev",
+    "beforeBuildCommand": "pnpm build:bundle",
+    "devUrl": "http://127.0.0.1:1420",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "StyleLens",
+        "width": 520,
+        "height": 440,
+        "minWidth": 520,
+        "minHeight": 440,
+        "maxWidth": 520,
+        "resizable": false,
+        "decorations": false,
+        "transparent": true,
+        "shadow": false,
+        "skipTaskbar": true,
+        "center": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "icon": ["icons/icon.png", "icons/icon.ico"],
+    "externalBin": ["binaries/stylelens-api"],
+    "resources": ["resources/stylelens-public"]
+  },
+  "plugins": {
+    "shell": {
+      "open": true
+    }
+  }
+}

@@ -5,8 +5,11 @@
   "type": "module",
   "scripts": {
     "build": "pnpm --filter @stylelens/extension build",
+    "desktop:dev": "pnpm --filter @stylelens/desktop tauri:dev",
+    "desktop:build": "pnpm --filter @stylelens/desktop tauri:build",
     "test": "pnpm -r test",
     "lint": "pnpm -r lint",
+    "typecheck": "pnpm --filter @stylelens/extension typecheck && pnpm --filter @stylelens/api typecheck && pnpm --filter @stylelens/desktop typecheck",
     "test:e2e": "pnpm --filter @stylelens/extension test:e2e"
   },
   "devDependencies": {

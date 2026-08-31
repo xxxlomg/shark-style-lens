@@ -51,7 +51,6 @@ export function analyzeGrid(el: HTMLElement, cs: CSSStyleDeclaration): GridLayou
 
 /** 间距与盒模型（§12） */
 export function analyzeSpacing(el: HTMLElement, cs: CSSStyleDeclaration): SpacingProfile {
-  const rect = el.getBoundingClientRect()
   return {
     margin: {
       top: cs.marginTop,
@@ -79,7 +78,9 @@ export function describeLayout(
   grid?: GridLayout,
 ): string {
   if (flex) {
-    const parts = [flex.direction === 'row' ? 'horizontal flex' : 'vertical flex']
+    const horizontal = flex.direction === 'row' || flex.direction === 'row-reverse'
+    const direction = flex.direction.endsWith('-reverse') ? ' reversed' : ''
+    const parts = [`${horizontal ? 'horizontal' : 'vertical'}${direction} flex`]
     if (flex.justifyContent && flex.justifyContent !== 'normal') {
       parts.push(`${flex.justifyContent} main-axis alignment`)
     }

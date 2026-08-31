@@ -34,12 +34,15 @@ interface AnalysisState {
   progress: number
   profile?: StyleProfile
   prompt: string
+  reasoning: string
   error?: string
   setStatus: (status: AnalysisStatus) => void
   setProgress: (progress: number) => void
   setProfile: (profile?: StyleProfile) => void
   appendPrompt: (text: string) => void
   resetPrompt: () => void
+  appendReasoning: (text: string) => void
+  resetReasoning: () => void
   setError: (error?: string) => void
 }
 
@@ -47,11 +50,14 @@ export const useAnalysisStore = create<AnalysisState>()((set) => ({
   status: 'idle',
   progress: 0,
   prompt: '',
+  reasoning: '',
   setStatus: (status) => set({ status }),
   setProgress: (progress) => set({ progress }),
   setProfile: (profile) => set({ profile }),
   appendPrompt: (text) => set((s) => ({ prompt: s.prompt + text })),
   resetPrompt: () => set({ prompt: '' }),
+  appendReasoning: (text) => set((s) => ({ reasoning: s.reasoning + text })),
+  resetReasoning: () => set({ reasoning: '' }),
   setError: (error) => set({ error }),
 }))
 

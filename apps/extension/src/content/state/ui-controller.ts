@@ -7,6 +7,7 @@ function resetAnalysis() {
   analysis.setStatus('idle')
   analysis.setProgress(0)
   analysis.resetPrompt()
+  analysis.resetReasoning()
   analysis.setProfile(undefined)
   analysis.setError(undefined)
 }

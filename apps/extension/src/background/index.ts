@@ -76,7 +76,7 @@ chrome.runtime.onMessage.addListener((message: unknown, sender, sendResponse) =>
         target: payload.target.tagName,
         factCount: payload.facts.length,
       })
-      void requestPrompt(payload, tabId)
+      void requestPrompt(payload, tabId, sender.tab?.windowId)
     }
   }
   sendResponse(handleMessage(message))

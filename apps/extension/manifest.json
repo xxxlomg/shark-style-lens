@@ -9,8 +9,8 @@
     "48": "stylelens-icon-48.png",
     "128": "stylelens-icon-128.png"
   },
-  "permissions": ["activeTab", "scripting", "storage"],
-  "host_permissions": ["http://127.0.0.1/*", "http://localhost/*"],
+  "permissions": ["activeTab", "downloads", "scripting", "storage"],
+  "host_permissions": ["<all_urls>"],
   "background": {
     "service_worker": "background.js",
     "type": "module"
@@ -28,7 +28,7 @@
       "32": "stylelens-icon-32.png"
     },
     "default_popup": "src/popup/index.html",
-    "default_title": "StyleLens — Select UI"
+    "default_title": "StyleLens"
   },
   "commands": {
     "toggle-select": {

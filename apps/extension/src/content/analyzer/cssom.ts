@@ -1,4 +1,5 @@
 import type { AnalysisWarning, CSSVariableUsage } from '../../shared/schemas/style-profile'
+import { sanitizeCssValue, sanitizeReferenceUrl } from './privacy'
 
 export interface RuleHit {
   selector: string
@@ -25,7 +26,7 @@ function collectVariablesFromDeclarations(
       seen.add(name)
       out.push({
         name,
-        resolvedValue: resolve(name) || name,
+        resolvedValue: sanitizeCssValue(resolve(name) || name),
         sourceElement,
         sourceRule,
         scope: 'self',
@@ -50,27 +51,43 @@ export function inspectCssom(
 
   const resolveVar = (name: string) => getComputedStyle(el).getPropertyValue(name).trim()
 
-  const walkRules = (cssRules: CSSRuleList | null, media?: string) => {
+  const walkRules = (cssRules: CSSRuleList | null, media?: string, stylesheetUrl?: string) => {
     if (!cssRules) return
     for (const rule of Array.from(cssRules) as CSSRule[]) {
       if (rule instanceof CSSMediaRule) {
-        walkRules(rule.cssRules, rule.media.mediaText)
+        const mediaText = media ? `${media} and ${rule.media.mediaText}` : rule.media.mediaText
+        if (mediaText && !window.matchMedia(mediaText).matches) continue
+        walkRules(rule.cssRules, mediaText, stylesheetUrl)
         continue
       }
       if (rule instanceof CSSSupportsRule) {
-        walkRules(rule.cssRules, media)
+        if (
+          typeof CSS !== 'undefined' &&
+          typeof CSS.supports === 'function' &&
+          !CSS.supports(rule.conditionText)
+        )
+          continue
+        walkRules(rule.cssRules, media, stylesheetUrl)
         continue
       }
       if (!(rule instanceof CSSStyleRule)) continue
       const matchedProps: Record<string, string> = {}
       for (const prop of props) {
         const value = rule.style.getPropertyValue(prop)
-        if (value) matchedProps[prop] = value
+        if (value) matchedProps[prop] = sanitizeCssValue(value)
       }
       if (Object.keys(matchedProps).length === 0) continue
-      if (el.matches(rule.selectorText)) {
+      let matches = false
+      try {
+        matches = el.matches(rule.selectorText)
+      } catch {
+        // Invalid selectors from a third-party sheet must not hide other rules.
+        continue
+      }
+      if (matches) {
         rules.push({
           selector: rule.selectorText,
+          stylesheetUrl: stylesheetUrl ? sanitizeReferenceUrl(stylesheetUrl) : undefined,
           media,
           properties: matchedProps,
           accessible: true,
@@ -90,7 +107,7 @@ export function inspectCssom(
   try {
     for (const sheet of Array.from(document.styleSheets)) {
       try {
-        walkRules(sheet.cssRules)
+        walkRules(sheet.cssRules, undefined, sheet.href || undefined)
       } catch {
         // 跨域 stylesheet：cssRules 访问抛异常
         crossOriginSeen = true

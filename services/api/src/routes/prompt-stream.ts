@@ -1,77 +1,137 @@
-import { Hono } from 'hono'
-import { compilePromptContext } from '../compiler/prompt-compiler'
-import type { LightProfile } from '../compiler/types'
-import { authMiddleware } from '../middleware/auth'
-import { getConfiguredProvider } from '../providers'
-import { ProviderError } from '../providers/types'
-import { promptStreamRequestSchema } from '../schemas'
+import { Hono } from "hono";
+import { compilePromptContext } from "../compiler/prompt-compiler";
+import type { LightProfile } from "../compiler/types";
+import { authMiddleware } from "../middleware/auth";
+import { getConfiguredProvider } from "../providers";
+import {
+  ProviderError,
+  type CompiledContext,
+  type PromptProvider,
+  type PromptStreamChunk,
+  type ProviderOptions,
+} from "../providers/types";
+import { findSensitivePayload, promptStreamRequestSchema } from "../schemas";
 
-export const promptStreamRoute = new Hono()
+export const promptStreamRoute = new Hono();
 
-promptStreamRoute.post('/stream', authMiddleware(), async (c) => {
-  const traceId = c.req.header('x-trace-id')?.trim() || crypto.randomUUID()
-  const startedAt = Date.now()
-  console.info('[StyleLens API] prompt:received', {
+async function* providerStream(
+  provider: PromptProvider,
+  compiled: CompiledContext,
+  options: ProviderOptions,
+  signal: AbortSignal,
+): AsyncIterable<PromptStreamChunk> {
+  if (provider.streamWithReasoning) {
+    yield* provider.streamWithReasoning(compiled, options, signal);
+    return;
+  }
+  for await (const text of provider.stream(compiled, options, signal)) {
+    yield { kind: "content", text };
+  }
+}
+
+promptStreamRoute.post("/stream", authMiddleware(), async (c) => {
+  const traceId = c.req.header("x-trace-id")?.trim() || crypto.randomUUID();
+  const startedAt = Date.now();
+  console.info("[StyleLens API] prompt:received", {
     traceId,
     method: c.req.method,
     path: new URL(c.req.url).pathname,
-  })
+  });
 
-  let body: unknown
+  let body: unknown;
   try {
-    body = await c.req.json()
+    body = await c.req.json();
   } catch {
-    console.warn('[StyleLens API] prompt:invalid-json', { traceId })
+    console.warn("[StyleLens API] prompt:invalid-json", { traceId });
     return c.json(
       {
         error: {
-          code: 'E_INVALID_PAYLOAD',
-          message: 'Request body must be JSON',
+          code: "E_INVALID_PAYLOAD",
+          message: "Request body must be JSON",
         },
       },
       400,
-    )
+    );
   }
 
-  const parsed = promptStreamRequestSchema.safeParse(body)
+  const parsed = promptStreamRequestSchema.safeParse(body);
   if (!parsed.success) {
-    console.warn('[StyleLens API] prompt:invalid-payload', {
+    console.warn("[StyleLens API] prompt:invalid-payload", {
       traceId,
-      detail: parsed.error.issues.map((i) => i.path.join('.')).join(', '),
-    })
+      detail: parsed.error.issues.map((i) => i.path.join(".")).join(", "),
+    });
     return c.json(
       {
         error: {
-          code: 'E_INVALID_PAYLOAD',
-          message: 'Request body failed validation',
-          detail: parsed.error.issues.map((i) => i.path.join('.')).join(', '),
+          code: "E_INVALID_PAYLOAD",
+          message: "Request body failed validation",
+          detail: parsed.error.issues.map((i) => i.path.join(".")).join(", "),
         },
       },
       400,
-    )
+    );
   }
 
-  const { profile, options } = parsed.data
-  const compiled = compilePromptContext(
+  const { profile, options, images } = parsed.data;
+  const sensitivePath = findSensitivePayload(profile);
+  if (sensitivePath) {
+    console.warn("[StyleLens API] prompt:sensitive-payload", {
+      traceId,
+      path: sensitivePath,
+    });
+    return c.json(
+      {
+        error: {
+          code: "E_SENSITIVE_PAYLOAD",
+          message: "Payload contains prohibited sensitive data",
+        },
+      },
+      400,
+    );
+  }
+  const compiledBase = compilePromptContext(
     profile as unknown as LightProfile,
     options ?? {},
-  )
-  const configured = getConfiguredProvider()
-  const provider = configured.provider
-  const requestSignal = c.req.raw.signal
+  );
+  const configured = getConfiguredProvider({ traceId });
+  const agentImages = configured.slot.capabilities.vision ? images : undefined;
+  const compiled = {
+    ...compiledBase,
+    imageInputs: agentImages,
+    data: {
+      ...(compiledBase.data as Record<string, unknown>),
+      imageHandoff: {
+        available: Boolean(images?.length),
+        deliveredToAgent: Boolean(agentImages?.length),
+        crops: (images ?? []).map(({ dataUrl: _dataUrl, ...image }) => image),
+        limitation: agentImages?.length
+          ? undefined
+          : images?.length
+            ? "The selected Agent slot is text-only; image crops were retained as metadata but not sent to the model."
+            : "No screenshot crops were supplied.",
+      },
+    },
+  };
+  const provider = configured.provider;
+  const requestSignal = c.req.raw.signal;
 
-  console.info('[StyleLens API] prompt:provider-selected', {
+  console.info("[StyleLens API] model:task-dispatched", {
     traceId,
+    slot: configured.slot.role,
+    task: "reconstruction-synthesis",
     provider: configured.name,
+    model: configured.slot.model,
+    execution: configured.name === "deepseek" ? "remote-api" : "local-mock",
     target: profile.target.tagName,
     factCount: profile.facts.length,
-  })
+    imageCount: agentImages?.length ?? 0,
+  });
 
-  c.header('content-type', 'text/event-stream')
-  c.header('cache-control', 'no-cache')
-  c.header('connection', 'keep-alive')
+  c.header("content-type", "text/event-stream");
+  c.header("cache-control", "no-cache");
+  c.header("connection", "keep-alive");
 
-  const encoder = new TextEncoder()
+  const encoder = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       const send = (event: string, data: unknown) => {
@@ -80,81 +140,105 @@ promptStreamRoute.post('/stream', authMiddleware(), async (c) => {
             encoder.encode(
               `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`,
             ),
-          )
+          );
         } catch {
           /* 客户端已断开 */
         }
-      }
-      const ping = setInterval(() => send('ping', {}), 15_000)
+      };
+      const ping = setInterval(() => send("ping", {}), 15_000);
 
       if (requestSignal.aborted) {
-        console.info('[StyleLens API] prompt:aborted-before-stream', {
+        console.info("[StyleLens API] prompt:aborted-before-stream", {
           traceId,
-        })
-        clearInterval(ping)
+        });
+        clearInterval(ping);
         try {
-          controller.close()
+          controller.close();
         } catch {
           /* 客户端已断开 */
         }
-        return
+        return;
       }
 
-      send('prompt_start', {})
-      console.info('[StyleLens API] prompt:upstream-start', {
+      send("prompt_start", {});
+      console.info("[StyleLens API] prompt:upstream-start", {
         traceId,
+        slot: configured.slot.role,
+        model: configured.slot.model,
         provider: configured.name,
-      })
+      });
       try {
-        for await (const chunk of provider.stream(
+        let reasoningChunkCount = 0;
+        let contentChunkCount = 0;
+        for await (const chunk of providerStream(
+          provider,
           compiled,
           options ?? {},
           requestSignal,
         )) {
-          send('prompt_chunk', { text: chunk })
+          if (chunk.kind === "reasoning") {
+            reasoningChunkCount += 1;
+            send("prompt_reasoning_chunk", { text: chunk.text });
+          } else {
+            if (chunk.text) contentChunkCount += 1;
+            send("prompt_chunk", { text: chunk.text });
+          }
         }
         if (!requestSignal.aborted) {
-          send('prompt_complete', { promptId: crypto.randomUUID() })
-          console.info('[StyleLens API] prompt:complete', {
+          if (contentChunkCount === 0) {
+            throw new ProviderError(
+              "E_PROVIDER_INVALID_OUTPUT",
+              "Agent returned reasoning but no reconstruction prompt content",
+            );
+          }
+          send("prompt_complete", { promptId: crypto.randomUUID() });
+          console.info("[StyleLens API] prompt:complete", {
             traceId,
+            slot: configured.slot.role,
+            model: configured.slot.model,
             provider: configured.name,
             durationMs: Date.now() - startedAt,
-          })
+            reasoningChunkCount,
+          });
         }
       } catch (err) {
         if (!requestSignal.aborted) {
           const code =
-            err instanceof ProviderError ? err.code : 'E_PROVIDER_STREAM_ERROR'
-          console.error('[StyleLens API] prompt:error', {
+            err instanceof ProviderError ? err.code : "E_PROVIDER_STREAM_ERROR";
+          console.error("[StyleLens API] prompt:error", {
             traceId,
+            slot: configured.slot.role,
+            model: configured.slot.model,
             provider: configured.name,
             code,
-            message: (err as Error)?.message ?? 'Stream failed',
+            message: (err as Error)?.message ?? "Stream failed",
             durationMs: Date.now() - startedAt,
-          })
-          send('prompt_error', {
+          });
+          send("prompt_error", {
             code,
-            message: (err as Error)?.message ?? 'Stream failed',
-            recoverable: true,
-          })
+            message: (err as Error)?.message ?? "Stream failed",
+            recoverable: code !== "E_PROVIDER_INVALID_OUTPUT",
+          });
         }
       } finally {
         if (requestSignal.aborted) {
-          console.info('[StyleLens API] prompt:aborted', {
+          console.info("[StyleLens API] prompt:aborted", {
             traceId,
+            slot: configured.slot.role,
+            model: configured.slot.model,
             provider: configured.name,
             durationMs: Date.now() - startedAt,
-          })
+          });
         }
-        clearInterval(ping)
+        clearInterval(ping);
         try {
-          controller.close()
+          controller.close();
         } catch {
           /* 客户端已断开 */
         }
       }
     },
-  })
+  });
 
-  return c.body(stream)
-})
+  return c.body(stream);
+});

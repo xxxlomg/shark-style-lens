@@ -14,20 +14,16 @@ export function BrandMark({ className, size = 20 }: BrandMarkProps) {
       width={size}
       xmlns="http://www.w3.org/2000/svg"
     >
-      <rect width="128" height="128" rx="28" fill="#162329" />
-      <rect
-        x="4"
-        y="4"
-        width="120"
-        height="120"
-        rx="24"
-        fill="none"
-        stroke="#2f464e"
-        strokeWidth="4"
-      />
-      <circle cx="55" cy="54" r="27" fill="none" stroke="#f3f5f3" strokeWidth="9" />
-      <path d="m76 75 28 28" fill="none" stroke="#1478e6" strokeLinecap="round" strokeWidth="12" />
-      <circle cx="55" cy="54" r="7" fill="#b7e8d1" />
+      <rect width="128" height="128" rx="30" fill="#b7e8d1" />
+      <g transform="translate(5 -5) rotate(-8 64 64)">
+        <path
+          d="M22 12 29 112 52 90 69 120 89 109 72 78 104 74Z"
+          fill="#142027"
+          stroke="#f9fbfa"
+          strokeLinejoin="round"
+          strokeWidth="6"
+        />
+      </g>
     </svg>
   )
 }

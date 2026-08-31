@@ -1,24 +1,41 @@
-import { DeepSeekProvider } from './deepseek'
-import { MockProvider } from './mock'
-import { OpenAIProvider } from './openai'
+import {
+  createSlotProvider,
+  resolveModelConfig,
+  resolveVisionDispatch,
+  type ModelConfig,
+  type ProviderKind,
+  type ProviderRequestLogContext,
+  type SlotConfig,
+  type VisionDispatch,
+} from './model-config'
 import type { PromptProvider } from './types'
 
-export type ProviderName = 'deepseek' | 'openai' | 'mock'
+export type ProviderName = ProviderKind
 
 export interface ConfiguredProvider {
   name: ProviderName
   provider: PromptProvider
+  slot: SlotConfig
 }
 
-/** Provider 优先级：DeepSeek → OpenAI GPT → Mock。只按 Key 是否配置选择。 */
-export function getConfiguredProvider(): ConfiguredProvider {
-  const deepseekKey = process.env.DEEPSEEK_API_KEY?.trim()
-  if (deepseekKey) return { name: 'deepseek', provider: new DeepSeekProvider(deepseekKey) }
+export type { ModelConfig, ProviderKind, ProviderRequestLogContext, SlotConfig, VisionDispatch }
 
-  const openaiKey = process.env.OPENAI_API_KEY?.trim()
-  if (openaiKey) return { name: 'openai', provider: new OpenAIProvider(openaiKey) }
+/** §45 Dual-Slot Model Config Registry：从服务端 env 解析双槽位配置（含启动期不变量校验） */
+export function getModelConfig(): ModelConfig {
+  return resolveModelConfig()
+}
 
-  return { name: 'mock', provider: new MockProvider() }
+/** §45.5 视觉调度决策：专用视觉槽 → 委托多模态 Agent 槽 → 跳过 */
+export function getVisionDispatch(): VisionDispatch {
+  return resolveVisionDispatch(getModelConfig())
+}
+
+/** Agent 槽 Provider（综合推理），保持既有单槽位调用方的向后兼容 */
+export function getConfiguredProvider(
+  logContext?: ProviderRequestLogContext,
+): ConfiguredProvider {
+  const slot = getModelConfig().agent
+  return { name: slot.provider, provider: createSlotProvider(slot, logContext), slot }
 }
 
 export function getProvider(): PromptProvider {

@@ -9,27 +9,95 @@ import { styleProfileSchema } from '../../shared/schemas/style-profile'
 import { collectDom } from './dom'
 import { collectComputedFacts } from './css'
 import { inspectCssom } from './cssom'
-import { analyzeThemeResponsive, collectOuterLayoutContext, inferBoundary } from './context'
+import {
+  analyzeThemeResponsive,
+  collectOuterLayoutContext,
+  inferBoundary,
+  resolveComponentRoot,
+} from './context'
 import { analyzeLayout } from './layout'
 import { analyzePseudoElements } from './pseudo'
+import { collectSubtree, SUBTREE_MAX_NODES, type SubtreeColor } from './subtree'
+import { analyzePageContext } from './theme'
 import { analyzeTypography } from './typography'
 import { uidFor } from './uid'
 import { analyzeVisual, extractColorToken } from './visual'
-import { sanitizeText } from './privacy'
+import { sanitizeAttributes, sanitizeText } from './privacy'
 
 export const STYLE_PROFILE_VERSION = '0.1.0'
+
+const UI_STATES = [
+  'hover',
+  'focus',
+  'active',
+  'disabled',
+  'checked',
+  'selected',
+  'expanded',
+  'pressed',
+] as const
+
+const CSSOM_PROPS = [
+  'display',
+  'position',
+  'width',
+  'height',
+  'min-width',
+  'max-width',
+  'min-height',
+  'max-height',
+  'padding',
+  'margin',
+  'gap',
+  'flex-direction',
+  'flex-wrap',
+  'justify-content',
+  'align-items',
+  'grid-template-columns',
+  'grid-template-rows',
+  'font-family',
+  'font-size',
+  'font-weight',
+  'line-height',
+  'letter-spacing',
+  'text-align',
+  'color',
+  'background-color',
+  'background-image',
+  'background-size',
+  'background-position',
+  'background-repeat',
+  'background-clip',
+  'background-blend-mode',
+  'border-radius',
+  'border-width',
+  'border-style',
+  'border-color',
+  'outline',
+  'outline-offset',
+  'box-shadow',
+  'opacity',
+  'filter',
+  'backdrop-filter',
+  'transform',
+  'transform-origin',
+  'clip-path',
+  'mask-image',
+  'mix-blend-mode',
+  'will-change',
+  'isolation',
+  'contain',
+  'overflow',
+  'overflow-x',
+  'overflow-y',
+  'pointer-events',
+  'z-index',
+] as const
 
 export interface BuildOptions {
   scope: 'element' | 'component'
   onPhase?: (phase: string, progress: number) => void
 }
-
-const PHASES: Array<[string, number]> = [
-  ['inspecting-structure', 25],
-  ['understanding-layout', 50],
-  ['collecting-styles', 75],
-  ['building-profile', 95],
-]
 
 /**
  * 构建 StyleProfile（§23 / §60）：
@@ -38,18 +106,29 @@ const PHASES: Array<[string, number]> = [
 export function buildProfile(el: HTMLElement, options: BuildOptions): StyleProfile {
   options.onPhase?.('preparing', 10)
 
-  const targetUid = uidFor(el)
-  const rect = el.getBoundingClientRect()
+  const selectedUid = uidFor(el)
+  const componentRoot = options.scope === 'component' ? resolveComponentRoot(el) : undefined
+  const analysisRoot = componentRoot?.root ?? el
+  const targetUid = uidFor(analysisRoot)
+  const rect = analysisRoot.getBoundingClientRect()
+  const targetAttributes: Record<string, string> = {}
+  for (const attribute of analysisRoot.attributes) {
+    targetAttributes[attribute.name] = attribute.value
+  }
 
   const target: TargetInfo = {
     uid: targetUid,
-    tagName: el.tagName.toLowerCase(),
-    role: el.getAttribute('role') ?? undefined,
-    id: el.id || undefined,
-    classes: Array.from(el.classList),
-    attributes: {},
-    textContent: el.childElementCount === 0 ? sanitizeText(el.textContent ?? '') : undefined,
-    childCount: el.children.length,
+    selectedUid: selectedUid !== targetUid ? selectedUid : undefined,
+    tagName: analysisRoot.tagName.toLowerCase(),
+    role: analysisRoot.getAttribute('role') ?? undefined,
+    id: analysisRoot.id || undefined,
+    classes: Array.from(analysisRoot.classList),
+    attributes: sanitizeAttributes(targetAttributes),
+    textContent:
+      analysisRoot.childElementCount === 0
+        ? sanitizeText(analysisRoot.textContent ?? '')
+        : undefined,
+    childCount: analysisRoot.children.length,
     rect: {
       x: rect.x,
       y: rect.y,
@@ -61,54 +140,94 @@ export function buildProfile(el: HTMLElement, options: BuildOptions): StyleProfi
       left: rect.left,
     },
     selector: '',
-    isShadowBoundary: el.getRootNode() !== el.ownerDocument,
-    insideIframe: Boolean(el.ownerDocument.defaultView && el.ownerDocument.defaultView !== window),
+    isShadowBoundary: analysisRoot.getRootNode() !== analysisRoot.ownerDocument,
+    insideIframe: Boolean(
+      analysisRoot.ownerDocument.defaultView && analysisRoot.ownerDocument.defaultView !== window,
+    ),
   }
 
   options.onPhase?.('inspecting-structure', 25)
-  const dom = collectDom(el)
+  const dom = collectDom(analysisRoot)
 
   options.onPhase?.('understanding-layout', 50)
-  const layout = analyzeLayout(el)
-  const typography = analyzeTypography(el)
-  const visual = analyzeVisual(el)
-  visual.pseudoElements = analyzePseudoElements(el)
+  const layout = analyzeLayout(analysisRoot)
+  const typography = analyzeTypography(analysisRoot)
+  const visual = analyzeVisual(analysisRoot)
+  visual.pseudoElements = analyzePseudoElements(analysisRoot)
 
   options.onPhase?.('collecting-styles', 75)
-  const facts = collectComputedFacts(el, targetUid)
-  const cssom = inspectCssom(el, [
-    'background-color',
-    'color',
-    'border-radius',
-    'font-family',
-    'box-shadow',
-    'padding',
-  ])
+  const facts = collectComputedFacts(analysisRoot, targetUid)
+  const subtree = collectSubtree(analysisRoot)
 
-  const boundary = inferBoundary(el)
-  const outerLayoutContext = collectOuterLayoutContext(el)
+  // 页面主题与调色板（T2）：目标自身颜色 + 子树颜色样本
+  const targetColors: SubtreeColor[] = []
+  if (visual.background.kind === 'color' && visual.background.color) {
+    targetColors.push({ value: visual.background.color.observed, usage: 'background' })
+  }
+  targetColors.push({ value: visual.color.observed, usage: 'text' })
+  if (visual.border) targetColors.push({ value: visual.border.color.observed, usage: 'border' })
+  const pageContext = analyzePageContext([...targetColors, ...subtree.colors])
+  const cssom = inspectCssom(analysisRoot, [...CSSOM_PROPS])
+
+  const boundary = componentRoot
+    ? {
+        kind: componentRoot.kind,
+        confidence: componentRoot.confidence,
+        evidence: componentRoot.evidence,
+        rootUid: targetUid,
+        rootTagName: analysisRoot.tagName.toLowerCase(),
+        rootClasses: Array.from(analysisRoot.classList),
+      }
+    : inferBoundary(el)
+  const outerLayoutContext = collectOuterLayoutContext(analysisRoot)
   dom.context.outerLayoutContext = outerLayoutContext
   if (boundary) dom.context.componentBoundary = boundary
 
-  const responsive = analyzeThemeResponsive()
+  const responsive = analyzeThemeResponsive(pageContext)
 
-  // 资产（§18）：MVP 只描述不上传资源
+  // 资产只描述渲染来源，不上传 URL 或资源内容。
   const assets: AssetProfile[] = []
-  for (const img of Array.from(el.querySelectorAll('img')).slice(0, 5)) {
-    const r = img.getBoundingClientRect()
+  const assetElements = [
+    ...(analysisRoot.matches('img,svg,canvas,video') ? [analysisRoot] : []),
+    ...Array.from(analysisRoot.querySelectorAll('img,svg,canvas,video')),
+  ].slice(0, 12) as HTMLElement[]
+  for (const element of assetElements) {
+    const tag = element.tagName.toLowerCase()
+    const rect = element.getBoundingClientRect()
+    const image = element instanceof HTMLImageElement ? element : undefined
+    const svg = element instanceof SVGElement ? element : undefined
     assets.push({
-      uid: `a-${img.src.length}`,
-      kind: 'image',
-      hasUrl: Boolean(img.src),
-      width: img.naturalWidth || undefined,
-      height: img.naturalHeight || undefined,
-      aspectRatio:
-        img.naturalWidth && img.naturalHeight
-          ? `${img.naturalWidth}:${img.naturalHeight}`
-          : undefined,
-      objectFit: getComputedStyle(img).objectFit,
-      objectPosition: getComputedStyle(img).objectPosition,
-      description: 'Embedded <img> element',
+      uid: `a-${uidFor(element)}`,
+      kind:
+        tag === 'svg'
+          ? 'svg'
+          : tag === 'canvas'
+            ? 'icon'
+            : tag === 'video'
+              ? 'video-thumbnail'
+              : 'image',
+      hasUrl:
+        tag === 'img'
+          ? Boolean(image?.currentSrc || image?.src)
+          : tag === 'video'
+            ? Boolean((element as HTMLVideoElement).poster)
+            : false,
+      width: image?.naturalWidth || rect.width || undefined,
+      height: image?.naturalHeight || rect.height || undefined,
+      aspectRatio: rect.width && rect.height ? `${rect.width}:${rect.height}` : undefined,
+      objectFit: getComputedStyle(element).objectFit,
+      objectPosition: getComputedStyle(element).objectPosition,
+      svgViewBox: svg?.getAttribute('viewBox') ?? undefined,
+      description: `Embedded <${tag}> render source`,
+    })
+  }
+  const rootBackground = getComputedStyle(analysisRoot).backgroundImage
+  if (rootBackground && rootBackground !== 'none') {
+    assets.push({
+      uid: `a-background-${targetUid}`,
+      kind: 'background-image',
+      hasUrl: /url\(/i.test(rootBackground),
+      description: 'CSS background image or gradient on the analysis root',
     })
   }
 
@@ -148,7 +267,7 @@ export function buildProfile(el: HTMLElement, options: BuildOptions): StyleProfi
     })
   }
   const accentToken = extractColorToken(
-    el,
+    analysisRoot,
     visual.background.kind === 'color' ? (visual.background.color?.observed ?? '') : '',
   )
   if (accentToken) {
@@ -162,6 +281,7 @@ export function buildProfile(el: HTMLElement, options: BuildOptions): StyleProfi
 
   const profile: StyleProfile = {
     version: STYLE_PROFILE_VERSION,
+    analysisScope: options.scope,
     target,
     context: dom.context,
     structure: { domTree: dom.domTree },
@@ -180,9 +300,16 @@ export function buildProfile(el: HTMLElement, options: BuildOptions): StyleProfi
     visual,
     assets,
     responsive,
-    states: [{ state: 'default', captured: true }],
+    states: [
+      { state: 'default', captured: true },
+      ...UI_STATES.map((state) => ({ state, captured: false })),
+    ],
     facts: mergedFacts,
     inferences,
+    matchedRules: cssom.rules,
+    cssVariables: cssom.variables,
+    componentTree: subtree.tree,
+    pageContext,
     warnings: [...dom.warnings, ...cssom.warnings],
   }
 
@@ -191,6 +318,13 @@ export function buildProfile(el: HTMLElement, options: BuildOptions): StyleProfi
     throw new Error(
       `StyleProfile failed validation: ${parsed.error.issues.map((i) => i.path.join('.')).join(', ')}`,
     )
+  }
+  if (subtree.truncated) {
+    profile.warnings.push({
+      code: 'TREE_TRUNCATED',
+      message: `Subtree collection truncated (max nodes ${SUBTREE_MAX_NODES})`,
+      severity: 'info',
+    })
   }
   options.onPhase?.('building-profile', 100)
   return profile

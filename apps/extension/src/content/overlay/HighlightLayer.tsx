@@ -125,7 +125,7 @@ export function HighlightLayer() {
         id="stylelens-hover-outline"
         ref={outlineRef}
         style={{ display: 'none' }}
-        className="pointer-events-none fixed z-[2147483646] border-2 border-indigo-500 bg-indigo-500/10"
+        className="pointer-events-none fixed z-[2147483646] border-2 border-emerald-400 bg-emerald-400/10"
       />
       {/* hover tooltip */}
       <div

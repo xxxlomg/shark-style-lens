@@ -6,7 +6,7 @@ const DEFAULT_SECRET = 'stylelens-dev'
 /** 共享密钥鉴权（MESSAGE_PROTOCOL §5.2）：`Authorization: Bearer <secret>` */
 export function authMiddleware(): MiddlewareHandler {
   return async (c, next) => {
-    const expected = process.env.STYLELENS_API_SECRET ?? DEFAULT_SECRET
+    const expected = process.env.STYLELENS_API_SECRET?.trim() || DEFAULT_SECRET
     const traceId = c.req.header('x-trace-id')?.trim() || 'missing'
     const token = c.req.header('authorization')?.replace(/^Bearer\s+/i, '')
     if (!token || token !== expected) {
