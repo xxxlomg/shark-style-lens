@@ -11,6 +11,7 @@ import { dirname, join, resolve } from 'node:path'
 export const USER_CONFIG_VERSION = 1
 
 export type ReasoningEffort = 'low' | 'high' | 'max'
+export type AnalysisMode = 'template' | 'text' | 'multimodal'
 
 export interface UserConfig {
   version: number
@@ -21,6 +22,7 @@ export interface UserConfig {
     agentModel: string
     visionModel: string
   }
+  analysisMode: AnalysisMode
   thinkingEnabled: boolean
   reasoningEffort: ReasoningEffort
   api: {
@@ -33,6 +35,7 @@ export interface UserConfigPatch {
   baseUrl?: string
   agentModel?: string
   visionModel?: string
+  analysisMode?: AnalysisMode
   thinkingEnabled?: boolean
   reasoningEffort?: ReasoningEffort
 }
@@ -46,6 +49,7 @@ export interface PublicUserConfig {
   baseUrl: string
   agentModel: string
   visionModel: string
+  analysisMode: AnalysisMode
   thinkingEnabled: boolean
   reasoningEffort: ReasoningEffort
 }
@@ -116,6 +120,7 @@ export function defaultUserConfig(env: NodeJS.ProcessEnv = process.env): UserCon
       agentModel: DEFAULT_AGENT_MODEL,
       visionModel: DEFAULT_VISION_MODEL,
     },
+    analysisMode: 'multimodal',
     thinkingEnabled: false,
     reasoningEffort: 'high',
     api: { port: 3001 },
@@ -137,6 +142,7 @@ function normalizeConfig(value: unknown, env: NodeJS.ProcessEnv): UserConfig {
       : {}
   const port = Number(api.port)
   const reasoningEffort = input.reasoningEffort
+  const analysisMode = input.analysisMode
 
   return {
     version: USER_CONFIG_VERSION,
@@ -147,6 +153,10 @@ function normalizeConfig(value: unknown, env: NodeJS.ProcessEnv): UserConfig {
       agentModel: nonEmpty(provider.agentModel) ?? defaults.provider.agentModel,
       visionModel: nonEmpty(provider.visionModel) ?? defaults.provider.visionModel,
     },
+    analysisMode:
+      analysisMode === 'template' || analysisMode === 'text' || analysisMode === 'multimodal'
+        ? analysisMode
+        : defaults.analysisMode,
     thinkingEnabled: input.thinkingEnabled === true,
     reasoningEffort:
       reasoningEffort === 'low' || reasoningEffort === 'high' || reasoningEffort === 'max'
@@ -191,6 +201,7 @@ export function writeUserConfig(
         ...(patch.agentModel === undefined ? {} : { agentModel: patch.agentModel }),
         ...(patch.visionModel === undefined ? {} : { visionModel: patch.visionModel }),
       },
+      ...(patch.analysisMode === undefined ? {} : { analysisMode: patch.analysisMode }),
       ...(patch.thinkingEnabled === undefined ? {} : { thinkingEnabled: patch.thinkingEnabled }),
       ...(patch.reasoningEffort === undefined ? {} : { reasoningEffort: patch.reasoningEffort }),
     },
@@ -232,6 +243,7 @@ export function toPublicUserConfig(
     baseUrl: config.provider.baseUrl,
     agentModel: config.provider.agentModel,
     visionModel: config.provider.visionModel,
+    analysisMode: config.analysisMode,
     thinkingEnabled: config.thinkingEnabled,
     reasoningEffort: config.reasoningEffort,
   }

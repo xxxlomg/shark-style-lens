@@ -132,6 +132,7 @@ export const userConfigPatchSchema = z.object({
   baseUrl: z.string().trim().min(1).max(500).optional(),
   agentModel: z.string().trim().min(1).max(200).optional(),
   visionModel: z.string().trim().min(1).max(200).optional(),
+  analysisMode: z.enum(['template', 'text', 'multimodal']).optional(),
   thinkingEnabled: z.boolean().optional(),
   reasoningEffort: z.enum(["low", "high", "max"]).optional(),
 });

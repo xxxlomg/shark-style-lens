@@ -12,6 +12,33 @@ export interface AppOptions {
   publicDir?: string
 }
 
+async function probeAgentConnection(config: ReturnType<typeof getModelConfig>) {
+  if (config.analysisMode === 'template') {
+    return { ok: true, kind: 'template' as const, message: 'template-mode' }
+  }
+  if (config.agent.provider !== 'deepseek' || !config.agent.apiKey) {
+    return { ok: false, kind: 'local' as const, message: 'api-key-not-configured' }
+  }
+
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 8_000)
+  try {
+    const response = await fetch(`${config.agent.baseUrl.replace(/\/$/, '')}/models`, {
+      headers: { authorization: `Bearer ${config.agent.apiKey}` },
+      signal: controller.signal,
+    })
+    return {
+      ok: response.ok,
+      kind: 'deepseek' as const,
+      message: response.ok ? 'remote-ok' : `remote-http-${response.status}`,
+    }
+  } catch {
+    return { ok: false, kind: 'deepseek' as const, message: 'remote-unreachable' }
+  } finally {
+    clearTimeout(timeout)
+  }
+}
+
 /** 应用工厂（供测试、开发 server 与桌面 sidecar 复用） */
 export function createApp(options: AppOptions = {}): Hono {
   const app = new Hono()
@@ -23,20 +50,30 @@ export function createApp(options: AppOptions = {}): Hono {
   // binds to loopback, so this does not expose the configuration remotely.
   app.use('/api/*', cors({ origin: (origin) => origin ?? '*' }))
 
-  app.get('/api/health', (c) => {
+  app.get('/api/health', async (c) => {
     const config = getModelConfig()
     const dispatch = getVisionDispatch()
+    const probe = new URL(c.req.url).searchParams.get('probe') === '1'
+    const connection = probe
+      ? await probeAgentConnection(config)
+      : {
+          ok: config.analysisMode === 'template' || config.agent.provider === 'deepseek',
+          kind: config.analysisMode === 'template' ? ('template' as const) : ('local' as const),
+          message: config.analysisMode === 'template' ? 'template-mode' : 'local-service-ok',
+        }
     return c.json({
       status: 'ok',
       provider: getProviderName(),
-        configured: config.agent.provider === 'deepseek',
+      configured: Boolean(config.agent.apiKey),
       modelConfig: {
+        analysisMode: config.analysisMode,
         agent: { model: config.agent.model, vision: config.agent.capabilities.vision },
         vision: config.vision
           ? { model: config.vision.model, vision: config.vision.capabilities.vision }
           : null,
         visionDispatch: dispatch.kind,
       },
+      connection,
     })
   })
 

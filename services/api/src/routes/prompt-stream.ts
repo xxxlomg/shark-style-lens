@@ -2,7 +2,8 @@ import { Hono } from "hono";
 import { compilePromptContext } from "../compiler/prompt-compiler";
 import type { LightProfile } from "../compiler/types";
 import { authMiddleware } from "../middleware/auth";
-import { getConfiguredProvider } from "../providers";
+import { createSlotProvider, getModelConfig } from "../providers";
+import { MockProvider } from "../providers/mock";
 import {
   ProviderError,
   type CompiledContext,
@@ -93,8 +94,18 @@ promptStreamRoute.post("/stream", authMiddleware(), async (c) => {
     profile as unknown as LightProfile,
     options ?? {},
   );
-  const configured = getConfiguredProvider({ traceId });
-  const agentImages = configured.slot.capabilities.vision ? images : undefined;
+  const modelConfig = getModelConfig();
+  const templateMode = modelConfig.analysisMode === "template";
+  const agentSlot = modelConfig.agent;
+  const provider = templateMode
+    ? new MockProvider()
+    : createSlotProvider(agentSlot, { traceId });
+  const providerName = templateMode ? "template" : agentSlot.provider;
+  const providerModel = templateMode ? "deterministic-template" : agentSlot.model;
+  const agentImages =
+    modelConfig.analysisMode === "multimodal" && agentSlot.capabilities.vision
+      ? images
+      : undefined;
   const compiled = {
     ...compiledBase,
     imageInputs: agentImages,
@@ -112,16 +123,19 @@ promptStreamRoute.post("/stream", authMiddleware(), async (c) => {
       },
     },
   };
-  const provider = configured.provider;
   const requestSignal = c.req.raw.signal;
 
   console.info("[StyleLens API] model:task-dispatched", {
     traceId,
-    slot: configured.slot.role,
+    slot: agentSlot.role,
     task: "reconstruction-synthesis",
-    provider: configured.name,
-    model: configured.slot.model,
-    execution: configured.name === "deepseek" ? "remote-api" : "local-mock",
+    provider: providerName,
+    model: providerModel,
+    execution: templateMode
+      ? "local-template"
+      : providerName === "deepseek"
+        ? "remote-api"
+        : "local-mock",
     target: profile.target.tagName,
     factCount: profile.facts.length,
     imageCount: agentImages?.length ?? 0,
@@ -163,9 +177,9 @@ promptStreamRoute.post("/stream", authMiddleware(), async (c) => {
       send("prompt_start", {});
       console.info("[StyleLens API] prompt:upstream-start", {
         traceId,
-        slot: configured.slot.role,
-        model: configured.slot.model,
-        provider: configured.name,
+        slot: agentSlot.role,
+        model: providerModel,
+        provider: providerName,
       });
       try {
         let reasoningChunkCount = 0;
@@ -194,9 +208,9 @@ promptStreamRoute.post("/stream", authMiddleware(), async (c) => {
           send("prompt_complete", { promptId: crypto.randomUUID() });
           console.info("[StyleLens API] prompt:complete", {
             traceId,
-            slot: configured.slot.role,
-            model: configured.slot.model,
-            provider: configured.name,
+            slot: agentSlot.role,
+            model: providerModel,
+            provider: providerName,
             durationMs: Date.now() - startedAt,
             reasoningChunkCount,
           });
@@ -207,9 +221,9 @@ promptStreamRoute.post("/stream", authMiddleware(), async (c) => {
             err instanceof ProviderError ? err.code : "E_PROVIDER_STREAM_ERROR";
           console.error("[StyleLens API] prompt:error", {
             traceId,
-            slot: configured.slot.role,
-            model: configured.slot.model,
-            provider: configured.name,
+            slot: agentSlot.role,
+            model: providerModel,
+            provider: providerName,
             code,
             message: (err as Error)?.message ?? "Stream failed",
             durationMs: Date.now() - startedAt,
@@ -224,9 +238,9 @@ promptStreamRoute.post("/stream", authMiddleware(), async (c) => {
         if (requestSignal.aborted) {
           console.info("[StyleLens API] prompt:aborted", {
             traceId,
-            slot: configured.slot.role,
-            model: configured.slot.model,
-            provider: configured.name,
+            slot: agentSlot.role,
+            model: providerModel,
+            provider: providerName,
             durationMs: Date.now() - startedAt,
           });
         }

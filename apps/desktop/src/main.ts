@@ -23,8 +23,19 @@ interface PublicConfig {
   baseUrl: string
   agentModel: string
   visionModel: string
+  analysisMode: 'template' | 'text' | 'multimodal'
   thinkingEnabled: boolean
   reasoningEffort: 'low' | 'high' | 'max'
+}
+
+interface HealthResponse {
+  status: string
+  configured: boolean
+  connection?: {
+    ok: boolean
+    kind: 'template' | 'local' | 'deepseek'
+    message: string
+  }
 }
 
 interface ApiError {
@@ -45,6 +56,8 @@ let apiPort = DEFAULT_API_PORT
 let resizeFrame: number | null = null
 let preserveAdvancedSettingsOpen = false
 let configLoadPromise: Promise<void> | null = null
+let connectionBusy = false
+let toastTimer: number | null = null
 
 function apiBase(): string {
   return `http://127.0.0.1:${apiPort}`
@@ -59,13 +72,34 @@ function escapeHtml(value: string): string {
     .replaceAll("'", '&#039;')
 }
 
-function stateCapsule(): string {
+function aiStatusZone(): string {
   const configured = config?.apiKeyConfigured ?? false
   return `
-    <span class="state-capsule ${configured ? 'is-ready' : 'is-pending'}">
-      <span class="state-led" aria-hidden="true"></span>
-      <span>${configured ? 'AI 已连接' : '需要配置'}</span>
-    </span>`
+    <div class="ai-status-zone">
+      <button id="test-connection" class="connection-test-mini" type="button" aria-label="测试 AI 连通性" title="测试 AI 连通性">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M9.8 14.2a4.6 4.6 0 0 0 6.1 1.4l2.9-2.9a4.6 4.6 0 0 0-6.5-6.5l-1.5 1.5" />
+          <path d="M14.2 9.8a4.6 4.6 0 0 0-6.1-1.4l-2.9 2.9a4.6 4.6 0 0 0 6.5 6.5l1.5-1.5" />
+        </svg>
+      </button>
+      <span class="state-capsule ${configured ? 'is-ready' : 'is-pending'}">
+        <span class="state-led" aria-hidden="true"></span>
+        <span>${configured ? 'AI 已连接' : '需要配置'}</span>
+      </span>
+    </div>`
+}
+
+function showToast(message: string, tone: 'success' | 'error' = 'success') {
+  const toast = document.querySelector<HTMLDivElement>('#toast')
+  if (!toast) return
+  if (toastTimer !== null) window.clearTimeout(toastTimer)
+  toast.textContent = message
+  toast.className = `toast toast-${tone}`
+  toast.hidden = false
+  toastTimer = window.setTimeout(() => {
+    toast.hidden = true
+    toastTimer = null
+  }, 2200)
 }
 
 function brandMarkup() {
@@ -210,21 +244,52 @@ function render(state: 'loading' | 'ready' | 'error', message = '') {
               <p class="eyebrow">PROVIDER</p>
               <h1>连接 DeepSeek</h1>
             </div>
-            ${stateCapsule()}
+            ${aiStatusZone()}
           </div>
           <div class="field api-key-field">
             <label for="api-key">API Key</label>
             <span class="input-shell">
               <input id="api-key" type="password" autocomplete="off" placeholder="sk-..." aria-describedby="api-key-hint" />
-              <button id="toggle-key" class="input-action" type="button" aria-label="显示 API Key" aria-controls="api-key">显示</button>
+              <button id="toggle-key" class="input-action" type="button" aria-label="显示 API Key" aria-controls="api-key" aria-pressed="false">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <g class="eye-open">
+                    <path d="M2 12s3.5-6.5 10-6.5S22 12 22 12s-3.5 6.5-10 6.5S2 12 2 12Z" />
+                    <circle cx="12" cy="12" r="2.8" />
+                  </g>
+                  <g class="eye-closed">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+                    <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+                    <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24" />
+                    <path d="m1 1 22 22" />
+                  </g>
+                </svg>
+                <span>显示</span>
+              </button>
             </span>
             <small id="api-key-hint">${keyHint}</small>
           </div>
-          <details id="advanced-settings" class="advanced-settings" ${preserveAdvancedSettingsOpen || config.thinkingEnabled ? 'open' : ''}>
+          <fieldset class="mode-field">
+            <legend>分析模式</legend>
+            <div class="mode-options">
+              <label class="mode-option ${config.analysisMode === 'template' ? 'is-selected' : ''}">
+                <input type="radio" name="analysis-mode" value="template" ${config.analysisMode === 'template' ? 'checked' : ''} />
+                <span><b>模板模式</b><small>仅解析，不调用模型</small></span>
+              </label>
+              <label class="mode-option ${config.analysisMode === 'text' ? 'is-selected' : ''}">
+                <input type="radio" name="analysis-mode" value="text" ${config.analysisMode === 'text' ? 'checked' : ''} />
+                <span><b>文字模型</b><small>不发送截图</small></span>
+              </label>
+              <label class="mode-option ${config.analysisMode === 'multimodal' ? 'is-selected' : ''}">
+                <input type="radio" name="analysis-mode" value="multimodal" ${config.analysisMode === 'multimodal' ? 'checked' : ''} />
+                <span><b>视觉增强</b><small>Agent + Vision</small></span>
+              </label>
+            </div>
+          </fieldset>
+          <details id="advanced-settings" class="advanced-settings" ${preserveAdvancedSettingsOpen || (config.thinkingEnabled && config.analysisMode !== 'template') ? 'open' : ''}>
             <summary><span>高级设置</span><span class="summary-hint">思考模式</span></summary>
             <div class="advanced-content">
-               <label class="check-field"><input id="thinking-mode" type="checkbox" ${config.thinkingEnabled ? 'checked' : ''} /><span>启用 DeepSeek 思考模式</span></label>
-               <label class="field compact-field"><span>思考强度</span><select id="reasoning-effort" ${config.thinkingEnabled ? '' : 'disabled'}>
+               <label class="check-field"><input id="thinking-mode" type="checkbox" ${config.thinkingEnabled && config.analysisMode !== 'template' ? 'checked' : ''} ${config.analysisMode === 'template' ? 'disabled' : ''} /><span>启用 DeepSeek 思考模式</span></label>
+               <label class="field compact-field"><span>思考强度</span><select id="reasoning-effort" ${config.thinkingEnabled && config.analysisMode !== 'template' ? '' : 'disabled'}>
                  <option value="low" ${config.reasoningEffort === 'low' ? 'selected' : ''}>Low</option>
                  <option value="high" ${config.reasoningEffort === 'high' ? 'selected' : ''}>High</option>
                  <option value="max" ${config.reasoningEffort === 'max' ? 'selected' : ''}>Max</option>
@@ -238,7 +303,6 @@ function render(state: 'loading' | 'ready' | 'error', message = '') {
           </details>
           <div class="actions">
             <button class="primary" id="save" type="submit"><span>保存并继续</span><span aria-hidden="true">→</span></button>
-            <span id="save-status" class="form-status" role="status" aria-live="polite"></span>
           </div>
         </form>
         <section class="extension-row" aria-labelledby="extension-heading">
@@ -250,15 +314,35 @@ function render(state: 'loading' | 'ready' | 'error', message = '') {
           <button class="extension-action" id="open-extension-download" type="button"><span>打开</span></button>
         </section>
       </section>
+      <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
     </main>`
 
   bindWindowControls()
   bindAdvancedSettings()
+  const syncAnalysisModeUi = () => {
+    const selected = document.querySelector<HTMLInputElement>('input[name="analysis-mode"]:checked')?.value
+    const templateMode = selected === 'template'
+    document.querySelectorAll<HTMLElement>('.mode-option').forEach((option) => {
+      const input = option.querySelector<HTMLInputElement>('input')
+      option.classList.toggle('is-selected', input?.checked === true)
+    })
+    const thinking = document.querySelector<HTMLInputElement>('#thinking-mode')
+    const effort = document.querySelector<HTMLSelectElement>('#reasoning-effort')
+    if (thinking) {
+      thinking.disabled = templateMode
+      if (templateMode) thinking.checked = false
+    }
+    if (effort) effort.disabled = templateMode || !(thinking?.checked ?? false)
+  }
+  document.querySelectorAll<HTMLInputElement>('input[name="analysis-mode"]').forEach((input) => {
+    input.addEventListener('change', syncAnalysisModeUi)
+  })
   document.querySelector<HTMLInputElement>('#thinking-mode')?.addEventListener('change', (event) => {
     const input = event.currentTarget as HTMLInputElement
     const effort = document.querySelector<HTMLSelectElement>('#reasoning-effort')
-    if (effort) effort.disabled = !input.checked
+    if (effort) effort.disabled = input.disabled || !input.checked
   })
+  syncAnalysisModeUi()
   document.querySelector<HTMLFormElement>('#settings-form')?.addEventListener('submit', (event) => {
     event.preventDefault()
     void saveConfig()
@@ -266,14 +350,23 @@ function render(state: 'loading' | 'ready' | 'error', message = '') {
   document.querySelector<HTMLButtonElement>('#open-extension-download')?.addEventListener('click', () => {
     void openExtensionInstallPage()
   })
+  document.querySelector<HTMLButtonElement>('#test-connection')?.addEventListener('click', () => {
+    void testConnection()
+  })
   document.querySelector<HTMLButtonElement>('#toggle-key')?.addEventListener('click', (event) => {
+    event.preventDefault()
+    event.stopPropagation()
     const button = event.currentTarget as HTMLButtonElement
     const input = document.querySelector<HTMLInputElement>('#api-key')
     if (!input) return
     const isHidden = input.type === 'password'
     input.type = isHidden ? 'text' : 'password'
-    button.textContent = isHidden ? '隐藏' : '显示'
+    button.classList.toggle('is-revealed', isHidden)
+    const label = button.querySelector('span')
+    if (label) label.textContent = isHidden ? '隐藏' : '显示'
     button.setAttribute('aria-label', `${isHidden ? '隐藏' : '显示'} API Key`)
+    button.setAttribute('aria-pressed', String(isHidden))
+    input.focus({ preventScroll: true })
   })
 }
 
@@ -310,7 +403,11 @@ async function loadConfigOnce() {
         // Browser-only Vite preview keeps the development fallback port.
       }
       config = await apiRequest<PublicConfig>('/api/config')
-      if (typeof config.thinkingEnabled !== 'boolean' || !config.reasoningEffort) {
+      if (
+        typeof config.thinkingEnabled !== 'boolean' ||
+        !config.reasoningEffort ||
+        !['template', 'text', 'multimodal'].includes(config.analysisMode)
+      ) {
         throw new Error('本地服务版本过旧，请重新构建并启动 StyleLens。')
       }
       render('ready')
@@ -326,16 +423,23 @@ async function loadConfigOnce() {
 async function saveConfig() {
   if (!config || busy) return
   const saveButton = document.querySelector<HTMLButtonElement>('#save')
-  const status = document.querySelector<HTMLSpanElement>('#save-status')
   const key = document.querySelector<HTMLInputElement>('#api-key')?.value.trim() ?? ''
-  const thinkingEnabled = document.querySelector<HTMLInputElement>('#thinking-mode')?.checked ?? false
+  const analysisMode =
+    document.querySelector<HTMLInputElement>('input[name="analysis-mode"]:checked')?.value ??
+    'multimodal'
+  const thinkingEnabled =
+    analysisMode !== 'template' &&
+    (document.querySelector<HTMLInputElement>('#thinking-mode')?.checked ?? false)
   const reasoningEffort = document.querySelector<HTMLSelectElement>('#reasoning-effort')?.value ?? 'high'
   preserveAdvancedSettingsOpen = document.querySelector<HTMLDetailsElement>('#advanced-settings')?.open ?? false
   busy = true
   if (saveButton) saveButton.disabled = true
-  if (status) status.textContent = '保存中...'
   try {
-    const patch: Record<string, string | boolean> = { thinkingEnabled, reasoningEffort }
+    const patch: Record<string, string | boolean> = {
+      analysisMode,
+      thinkingEnabled,
+      reasoningEffort,
+    }
     if (key) patch.apiKey = key
     const savedConfig = await apiRequest<PublicConfig>('/api/config', {
       method: 'PUT',
@@ -344,20 +448,43 @@ async function saveConfig() {
     })
     if (
       savedConfig.thinkingEnabled !== thinkingEnabled ||
-      savedConfig.reasoningEffort !== reasoningEffort
+      savedConfig.reasoningEffort !== reasoningEffort ||
+      savedConfig.analysisMode !== analysisMode
     ) {
       throw new Error('本地服务未确认思考模式设置，请重新构建并启动 StyleLens。')
     }
     config = savedConfig
-    render('ready')
     preserveAdvancedSettingsOpen = false
-    const nextStatus = document.querySelector<HTMLSpanElement>('#save-status')
-    if (nextStatus) nextStatus.textContent = '已保存'
+    render('ready')
+    showToast('已保存')
   } catch (error) {
-    if (status) status.textContent = error instanceof Error ? error.message : '保存失败'
+    showToast(error instanceof Error ? error.message : '保存失败', 'error')
   } finally {
     busy = false
     if (saveButton) saveButton.disabled = false
+  }
+}
+
+async function testConnection() {
+  if (!config || connectionBusy) return
+  const button = document.querySelector<HTMLButtonElement>('#test-connection')
+  connectionBusy = true
+  if (button) button.disabled = true
+  try {
+    const health = await apiRequest<HealthResponse>('/api/health?probe=1')
+    const connection = health.connection
+    if (connection?.ok) {
+      showToast(connection.kind === 'template' ? '模板模式已就绪，无需 AI 连接' : 'AI 连接正常')
+    } else if (health.configured) {
+      showToast('本地服务正常，但 AI 端点未连通', 'error')
+    } else {
+      showToast('本地服务正常，请先配置 API Key', 'error')
+    }
+  } catch (error) {
+    showToast(error instanceof Error ? error.message : '连通性测试失败', 'error')
+  } finally {
+    connectionBusy = false
+    if (button) button.disabled = false
   }
 }
 

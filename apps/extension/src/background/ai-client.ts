@@ -12,6 +12,7 @@ export {
 } from '../shared/local-api'
 
 type Settings = ExtensionSettings
+type AnalysisMode = 'template' | 'text' | 'multimodal'
 
 interface SseEvent {
   event: string
@@ -69,6 +70,40 @@ function errorFromHttp(status: number, body: unknown, fallback: string): Pipelin
   const code = stringField(error, 'code') ?? 'E_BACKEND_UNAVAILABLE'
   const message = stringField(error, 'message') ?? fallback
   return new PipelineError(code, message, status !== 401 && status !== 403)
+}
+
+async function getAnalysisMode(
+  base: string,
+  secret: string,
+  signal: AbortSignal,
+): Promise<AnalysisMode> {
+  let response: Response
+  try {
+    response = await fetch(`${base}/api/config`, {
+      headers: { authorization: `Bearer ${secret}` },
+      signal,
+    })
+  } catch (error) {
+    if (signal.aborted) throw error
+    throw new PipelineError(
+      'E_CONFIG_UNAVAILABLE',
+      `Unable to read the selected analysis mode: ${(error as Error)?.message ?? 'unknown error'}`,
+    )
+  }
+
+  const body = await response.json().catch(() => null)
+  if (!response.ok) {
+    throw errorFromHttp(response.status, body, `Configuration API responded ${response.status}`)
+  }
+  const mode = eventRecord(body).analysisMode
+  if (mode !== 'template' && mode !== 'text' && mode !== 'multimodal') {
+    throw new PipelineError(
+      'E_CONFIG_UNAVAILABLE',
+      'Local API did not return a valid analysis mode. Please restart the local service.',
+      false,
+    )
+  }
+  return mode
 }
 
 function visionTask(profile: StyleProfile): string {
@@ -389,9 +424,9 @@ async function requestVisionEvidence(
 }
 
 /**
- * Preferred pipeline: capture -> Vision Slot -> structured evidence merge ->
- * Agent Slot. A Vision failure degrades to an explicitly warned DOM-only
- * Agent request so a structural reconstruction remains useful.
+ * The selected pipeline is resolved from the local API before any screenshot
+ * is captured: template -> local compiler, text -> text Agent, multimodal ->
+ * Vision evidence followed by Agent synthesis.
  */
 export async function requestPrompt(
   profile: StyleProfile,
@@ -432,26 +467,31 @@ export async function requestPrompt(
   try {
     const settings = await getSettings()
     const { base, secret } = apiConnection(settings)
+    const analysisMode = await getAnalysisMode(base, secret, controller.signal)
     let visionEvidence: VisionEvidence | undefined
     let visionImages: CapturedVisionImage[] = []
     let visionWarning: string | undefined
-    try {
-      const visionRun = await requestVisionEvidence(
-        profile,
-        tabId,
-        windowId,
-        base,
-        secret,
-        traceId,
-        controller.signal,
-      )
-      visionEvidence = visionRun.evidence
-      visionImages = visionRun.images
-      visionWarning = visionRun.unavailableReason
-    } catch (error) {
-      if (controller.signal.aborted) return
-      visionWarning = error instanceof Error ? error.message : String(error)
-      apiWarn('vision:degraded-to-dom-only', { traceId, tabId, reason: visionWarning })
+    if (analysisMode === 'multimodal') {
+      try {
+        const visionRun = await requestVisionEvidence(
+          profile,
+          tabId,
+          windowId,
+          base,
+          secret,
+          traceId,
+          controller.signal,
+        )
+        visionEvidence = visionRun.evidence
+        visionImages = visionRun.images
+        visionWarning = visionRun.unavailableReason
+      } catch (error) {
+        if (controller.signal.aborted) return
+        visionWarning = error instanceof Error ? error.message : String(error)
+        apiWarn('vision:degraded-to-dom-only', { traceId, tabId, reason: visionWarning })
+      }
+    } else {
+      apiLog('vision:skipped-by-analysis-mode', { traceId, tabId, analysisMode })
     }
     if (controller.signal.aborted) return
 
@@ -478,6 +518,7 @@ export async function requestPrompt(
       url: requestUrl,
       target: profile.target.tagName,
       factCount: profile.facts.length,
+      analysisMode,
       visionSource: visionEvidence?.source ?? 'unavailable',
     })
     send({ type: 'PROMPT_START' })

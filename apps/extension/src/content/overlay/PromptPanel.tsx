@@ -211,9 +211,7 @@ export function PromptPanel() {
                     idx < currentPhaseIdx ? 'bg-emerald-400' : 'bg-slate-600'
                   }`}
                 />
-                {phase.key === 'building-profile' && profile
-                  ? 'Analyzing visual evidence…'
-                  : phase.label}
+                {phase.key === 'building-profile' && profile ? 'Finalizing analysis…' : phase.label}
               </li>
             ))}
           </ul>

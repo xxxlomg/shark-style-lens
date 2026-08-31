@@ -11,6 +11,7 @@ import {
   isAllowedProviderBaseUrl,
   readUserConfig,
   type ReasoningEffort,
+  type AnalysisMode,
   type UserConfig,
 } from '../config/user-config'
 import type { PromptProvider } from './types'
@@ -42,6 +43,8 @@ export interface SlotConfig {
 }
 
 export interface ModelConfig {
+  /** Optional for callers that construct legacy configs; resolved configs always set it. */
+  analysisMode?: AnalysisMode
   agent: SlotConfig
   vision: SlotConfig | null
   visionDefaults: {
@@ -112,7 +115,7 @@ function resolveAgentSlot(env: NodeJS.ProcessEnv, userConfig: UserConfig): SlotC
       label: 'Mock (local test fallback)',
       capabilities: { vision: true, streaming: true, structuredOutput: false },
       thinking: {
-        enabled: userConfig.thinkingEnabled,
+        enabled: userConfig.analysisMode !== 'template' && userConfig.thinkingEnabled,
         reasoningEffort: userConfig.reasoningEffort,
       },
     }
@@ -128,7 +131,7 @@ function resolveAgentSlot(env: NodeJS.ProcessEnv, userConfig: UserConfig): SlotC
     label: 'DeepSeek Agent',
     capabilities: { vision: false, streaming: true, structuredOutput: false },
     thinking: {
-      enabled: userConfig.thinkingEnabled,
+      enabled: userConfig.analysisMode !== 'template' && userConfig.thinkingEnabled,
       reasoningEffort: userConfig.reasoningEffort,
     },
   }
@@ -155,6 +158,7 @@ function resolveVisionSlot(env: NodeJS.ProcessEnv, userConfig: UserConfig): Slot
 export function resolveModelConfig(env: NodeJS.ProcessEnv = process.env): ModelConfig {
   const userConfig = readUserConfig(env)
   const config: ModelConfig = {
+    analysisMode: userConfig.analysisMode,
     agent: resolveAgentSlot(env, userConfig),
     vision: resolveVisionSlot(env, userConfig),
     visionDefaults: {
@@ -174,6 +178,12 @@ export function validateModelConfig(config: ModelConfig): void {
 }
 
 export function resolveVisionDispatch(config: ModelConfig): VisionDispatch {
+  if (config.analysisMode && config.analysisMode !== 'multimodal') {
+    return {
+      kind: 'skip',
+      reason: `vision disabled by analysis mode: ${config.analysisMode}`,
+    }
+  }
   if (config.vision) return { kind: 'vision', slot: config.vision }
   if (config.agent.capabilities.vision) return { kind: 'delegate', slot: config.agent }
   return {

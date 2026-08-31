@@ -58,6 +58,7 @@ configRoute.put('/', async (c) => {
     console.info('[StyleLens API] config:updated', {
       configPath: getUserConfigPath(),
       provider: config.provider.name,
+      analysisMode: config.analysisMode,
       apiKeyConfigured: Boolean(config.provider.apiKey),
       thinkingEnabled: config.thinkingEnabled,
       reasoningEffort: config.reasoningEffort,

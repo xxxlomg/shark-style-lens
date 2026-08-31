@@ -17,7 +17,7 @@ export async function saveCapturedImages(
     captures.map((capture, index) =>
       chrome.downloads.download({
         url: capture.dataUrl,
-        filename: `stylelens-captures/${timestamp}-${traceId}-${capture.kind}-${index + 1}.png`,
+        filename: `stylelens/${timestamp}-${traceId}-${capture.kind}-${index + 1}.png`,
         saveAs: false,
         conflictAction: 'uniquify',
       }),

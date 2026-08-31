@@ -7,7 +7,7 @@
 <p align="center"><strong>把网页上的 UI 选出来，交给 AI 复刻。</strong></p>
 
 <p align="center">
-  StyleLens 是一个 Manifest V3 Chrome 扩展。它从选中的 DOM 元素提取结构、样式、布局和交互线索，结合一张精准的视觉截图，生成可直接交给 AI 编程工具的 UI 重建 Prompt。
+  StyleLens 是一个 Manifest V3 Chrome 扩展。它从选中的 DOM 元素提取结构、样式、布局和交互线索，并按用户选择的分析模式生成可直接交给 AI 编程工具的 UI 重建 Prompt。
 </p>
 
 <p align="center">
@@ -19,10 +19,10 @@
 
 - 选择网页上的元素，或将一个子元素扩展为完整复合组件。
 - 解析 DOM 子树、语义角色、布局关系、计算样式、页面主题和响应式信息。
-- 只截取选中元素的可见矩形，发送一张精准 PNG 给 Vision 模型，避免周边 UI 干扰。
-- 先生成结构化视觉证据，再交给 Agent Slot 编译高保真重建 Prompt。
+- 按需截取选中元素的可见矩形，发送精准 PNG 给 Vision 模型，避免周边 UI 干扰。
+- 支持模板、文字模型、视觉增强三种分析模式，用户可以自主选择是否使用 LLM 和 Vision。
 - 在页面浮层中流式查看结果，一键复制 Prompt，失败时可以重试。
-- 通过本地 API 服务统一保存 DeepSeek Key、截图目录和调试截图开关，浏览器扩展不保存云端 API Key。
+- 通过本地 API 服务统一管理 DeepSeek Key 和分析模式；浏览器扩展不保存云端 API Key。
 
 ## 工作方式
 
@@ -31,19 +31,28 @@
    |
    +-- DOM / CSS / layout / interaction analysis
    |
-   +-- captureVisibleTab -> getBoundingClientRect() 精准裁剪 -> 1 张 target PNG
+   +-- template -> local Prompt Compiler
    |
-   +-- Vision Slot -> structured visual evidence
+   +-- text -> Agent（仅文字）
    |
-   +-- Agent Slot + StyleProfile -> streamed reconstruction prompt
+   +-- multimodal -> captureVisibleTab -> Vision -> Agent
+   |
+   +-- streamed reconstruction prompt
    |
    `-- 页面浮层 -> 查看 / 复制 / 重新选择
 ```
 
-每次分析包含两次模型请求：
+## 分析模式
 
-1. 一次 Vision 请求：只携带选中目标的单张截图和脱敏后的组件清单。
-2. 一次 Agent 请求：携带 DOM Profile 与 Vision 结构化证据，流式生成 Prompt。
+所有模式都会先运行本地 DOM/CSS/布局解析。分析模式决定后续是否截图、是否调用 LLM：
+
+| 模式 | 处理方式 | 是否调用 LLM | 是否发送截图 |
+| --- | --- | --- | --- |
+| 模板模式 | 由本地确定性 Prompt Compiler 将解析结果回填为 Prompt | 否 | 否 |
+| 文字模型 | 将 DOM Profile 发送给文字 Agent 生成 Prompt | 是 | 否 |
+| 视觉增强 | 先由 Vision 生成结构化视觉证据，再由 Agent 生成 Prompt | 是 | 是 |
+
+默认使用“视觉增强”。模板模式不需要 DeepSeek API Key；文字模型不产生或发送视觉截图；视觉增强适合追求最高视觉还原度的场景。三种模式均复用同一套 DOM/CSS 解析结果，便于比较输出差异。
 
 ## 项目结构
 
@@ -63,7 +72,7 @@ packages/            共享类型与接口契约
 
 ## 桌面版（Windows）
 
-桌面版会自动启动本地 API，不需要用户手动打开命令行或维护 `.env`。首次启动时填写 DeepSeek API Key 和思考模式，配置会保存到：
+桌面版会自动启动本地 API，不需要用户手动打开命令行或维护 `.env`。首次启动时选择分析模式、填写 DeepSeek API Key 和配置思考模式，配置会保存到：
 
 ```text
 %APPDATA%\shark\shark-style-lens\config.json
@@ -131,10 +140,10 @@ pnpm --filter @stylelens/extension build
 1. 启动选择模式，移动鼠标查看目标元素高亮。
 2. 点击目标元素，在控制条中选择 `Element` 或 `Component` 范围。
 3. 点击 `Analyze`。
-4. 等待 Vision 分析和 Prompt 流式生成完成。
+4. 等待所选模式完成分析和 Prompt 生成。
 5. 点击 `Copy Prompt`，粘贴到 Claude、Cursor、Codex 或其他 AI 编程工具。
 
-如果要查看实际发送给 Vision 的图片，在桌面面板的高级设置中打开“保留调试截图”。扩展弹窗会从本地 API 回显这个状态；截图会保存到配置的临时目录，并且每次分析只生成一个目标 PNG。
+如果开启扩展 Popup 中的 `Save captures`，视觉增强模式生成的 PNG 会通过浏览器下载到 `stylelens/` 文件夹。模板模式和文字模型不会截图。
 
 ## 配置
 
@@ -152,13 +161,13 @@ pnpm --filter @stylelens/extension build
 
 桌面版优先使用 `%APPDATA%\shark\shark-style-lens\config.json`。开发时仍可使用 `services/api/.env` 覆盖配置；桌面发行版会显式关闭 `.env` 加载，避免把开发机环境带入用户程序。
 
-`thinkingEnabled` 默认关闭；开启后可选择 `low`、`high` 或 `max`，Agent 的 `reasoning_content` 会通过本地 SSE 流实时显示在扩展面板中。Vision 结构化分析始终关闭思考模式，以保持 JSON 输出稳定。
+`analysisMode` 默认是 `multimodal`，可选 `template`、`text`、`multimodal`。`thinkingEnabled` 默认关闭；开启后可选择 `low`、`high` 或 `max`，Agent 的 `reasoning_content` 会通过本地 SSE 流实时显示在扩展面板中。模板模式不使用思考能力；Vision 结构化分析始终关闭思考模式，以保持 JSON 输出稳定。
 
 ## 权限与隐私
 
 - 扩展使用 `activeTab`、`scripting` 和 `storage`。
 - `<all_urls>` 用于保证用户点击分析后，异步截图阶段仍然具备页面访问权限。
-- 截图只在 background 内存中短暂处理；启用保留调试截图后，由本地 API 写入配置的临时目录。
+- 只有视觉增强模式会在 background 内存中短暂处理截图；启用 `Save captures` 后，副本通过浏览器下载到 `stylelens/`。
 - 扩展只向本地 `localhost` / `127.0.0.1` API 发请求，地址配置经过回环地址校验。
 - DeepSeek Key 只放在本机配置文件或开发环境 `services/api/.env`，不会打包进扩展。
 - 日志记录请求阶段、模型、图片数量和 trace id，不记录 API Key、页面 DOM、Prompt 或图片内容。

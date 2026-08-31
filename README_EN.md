@@ -11,14 +11,14 @@
   <a href="https://gitee.com/xxxlomg/shark-style-lens">Gitee</a>
 </p>
 
-StyleLens is a local-first Chrome Manifest V3 extension. Select an element on a web page and it analyzes the DOM, CSS, layout, and visual evidence to produce a high-fidelity UI reconstruction prompt for AI coding tools.
+StyleLens is a local-first Chrome Manifest V3 extension. Select an element on a web page and it analyzes the DOM, CSS, layout, and optional visual evidence to produce a high-fidelity UI reconstruction prompt for AI coding tools.
 
 ## What It Does
 
 - Select a single element or expand the selection into a contextual component.
 - Inspect the DOM subtree, semantic roles, computed styles, layout relationships, themes, and interaction clues.
-- Capture the visible target region to reduce noise from surrounding page content.
-- Generate structured visual evidence with a Vision model, then compile a reconstruction prompt with an Agent model.
+- Capture the visible target region only when the selected mode needs visual evidence.
+- Choose between a deterministic template, a text-only Agent, or a Vision-enhanced Agent.
 - Stream, copy, and regenerate the prompt in the extension overlay.
 - Keep model configuration in a local API service so cloud API keys never enter the extension bundle.
 
@@ -27,13 +27,24 @@ StyleLens is a local-first Chrome Manifest V3 extension. Select an element on a 
 ```text
 Selected web element
   -> DOM / CSS / layout analysis
-  -> Target-region screenshot
-  -> Vision: structured visual evidence
-  -> Agent: streamed reconstruction prompt
+  -> template: local Prompt Compiler
+  -> text: text-only Agent
+  -> multimodal: screenshot -> Vision -> Agent
+  -> streamed reconstruction prompt
   -> Extension overlay: review and copy
 ```
 
-A complete analysis normally has two model stages: Vision identifies visual characteristics, while the Agent combines the DOM Profile and visual evidence into the final prompt.
+## Analysis Modes
+
+Every mode starts with the same local DOM, CSS, and layout analysis. The selected mode controls whether screenshots and LLMs are used:
+
+| Mode | Processing | LLM | Screenshot |
+| --- | --- | --- | --- |
+| Template | The local deterministic Prompt Compiler fills a prompt from the collected profile | No | No |
+| Text model | Sends the DOM Profile to a text Agent for prompt generation | Yes | No |
+| Vision enhanced | Vision produces structured visual evidence, then an Agent generates the prompt | Yes | Yes |
+
+Vision enhanced is the default. Template mode needs no DeepSeek API key; text mode never captures or sends visual screenshots; Vision enhanced is intended for the highest visual fidelity. All three modes reuse the same DOM/CSS analysis so their outputs can be compared.
 
 ## Model Thinking Mode
 
@@ -91,7 +102,7 @@ The local API listens on `http://127.0.0.1:3001` by default and also serves a lo
 
 ## Windows Desktop App
 
-The desktop app starts the local API sidecar and provides configuration for the API key and thinking mode. Its default configuration file is:
+The desktop app starts the local API sidecar and provides configuration for the analysis mode, API key, and thinking mode. Its default configuration file is:
 
 ```text
 %APPDATA%\shark\shark-style-lens\config.json
@@ -123,14 +134,14 @@ pnpm desktop:build
 | `DEEPSEEK_VISION_IMAGE_DETAIL` | `auto` | Vision image detail level |
 | `DEEPSEEK_VISION_MAX_IMAGES` | `4` | Maximum images accepted by the API per request |
 
-Thinking mode is stored by the desktop app. It defaults to `thinkingEnabled=false`; the reasoning effort uses the configured project value.
+`analysisMode` defaults to `multimodal` and accepts `template`, `text`, or `multimodal`. Thinking mode is stored by the desktop app. It defaults to `thinkingEnabled=false`; the reasoning effort uses the configured project value. Template mode does not use reasoning, and Vision structured analysis always disables reasoning to keep its JSON stable.
 
 ## Privacy and Security
 
 - The API listens only on the local loopback address by default.
 - The DeepSeek API key is read only by the local API or desktop sidecar and is not bundled with the extension.
 - Extension requests validate local API addresses and use a shared secret.
-- Page content, screenshots, and prompts are not written to normal logs. Debug captures are saved only when explicitly enabled.
+- Page content, screenshots, and prompts are not written to normal logs. Captures are saved under `stylelens/` only when explicitly enabled in the extension popup.
 - Sensitive page fields are redacted before being sent to a model.
 
 Never commit real API keys, personal configuration files, debug captures, build artifacts, or absolute local paths.
