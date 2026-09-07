@@ -1,7 +1,7 @@
 /**
  * Extension 消息协议 —— TypeScript 类型 + Zod schema
  *
- * 与 docs/MESSAGE_PROTOCOL.md §3 一一对应（配套文档 B）。
+ * 与 docs/MESSAGE_PROTOCOL.md 一一对应（配套文档 B）。
  * 所有消息 payload 经 Zod 校验；非法 payload 必须回复 E_INVALID_PAYLOAD。
  */
 import { z } from 'zod'

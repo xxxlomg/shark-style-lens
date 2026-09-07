@@ -37,8 +37,8 @@ function collectVariablesFromDeclarations(
 }
 
 /**
- * CSSOM 规则溯源（§8.2）：尝试定位影响目标元素的匹配规则与 CSS 变量。
- * 跨域 stylesheet 受浏览器安全策略限制 → 容错并产出 CROSS_ORIGIN_CSSOM warning（§41）。
+ * CSSOM 规则溯源：尝试定位影响目标元素的匹配规则与 CSS 变量。
+ * 跨域 stylesheet 受浏览器安全策略限制 → 容错并产出 CROSS_ORIGIN_CSSOM warning。
  */
 export function inspectCssom(
   el: HTMLElement,

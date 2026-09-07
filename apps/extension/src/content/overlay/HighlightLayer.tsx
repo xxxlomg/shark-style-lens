@@ -12,7 +12,7 @@ import { useAnalysisStore, useSelectionStore } from '../state/stores'
 import { SelectionControl } from './SelectionControl'
 
 /**
- * 选择层：hover 高亮 + tooltip（§4.1）+ 点击锁定（§4.2）+ 键盘（§4.3）。
+ * 选择层：hover 高亮 + tooltip + 点击锁定 + 键盘。
  * 热路径（mousemove）用 rAF 直接操作 DOM，不触发 React 重渲染。
  */
 export function HighlightLayer() {
@@ -29,7 +29,7 @@ export function HighlightLayer() {
     if (tooltipRef.current) tooltipRef.current.style.display = 'none'
   }
 
-  // hover 跟踪（仅 selecting 模式；mousemove 只算 elementFromPoint + rect，§38）
+  // hover 跟踪（仅 selecting 模式；mousemove 只算 elementFromPoint + rect）
   useEffect(() => {
     if (mode !== 'selecting') return
     const onMove = (e: MouseEvent) => {
@@ -88,7 +88,7 @@ export function HighlightLayer() {
     return () => document.removeEventListener('click', onClick, true)
   }, [mode])
 
-  // 键盘：Esc 取消 / Enter 确认（§4.3 / §59.1）
+  // 键盘：Esc 取消 / Enter 确认
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (mode === 'selecting') {
@@ -134,7 +134,7 @@ export function HighlightLayer() {
         style={{ display: 'none' }}
         className="pointer-events-none fixed z-[2147483646] max-w-[300px] truncate rounded-md bg-slate-900/90 px-2 py-1 text-xs font-mono text-white"
       />
-      {/* 锁定后的控制 UI（§4.2）：分析进行中隐藏，面板接管并锚定在控制条原位置 */}
+      {/* 锁定后的控制 UI：分析进行中隐藏，面板接管并锚定在控制条原位置 */}
       {mode === 'locked' && status === 'idle' && target && <SelectionControl target={target} />}
     </>
   )

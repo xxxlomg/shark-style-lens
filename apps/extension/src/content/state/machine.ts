@@ -1,5 +1,5 @@
 /**
- * UI 状态机（§47）
+ * UI 状态机
  *
  *   IDLE → SELECTING → SELECTED → ANALYZING → GENERATING → COMPLETED
  *                              ↘            ↘

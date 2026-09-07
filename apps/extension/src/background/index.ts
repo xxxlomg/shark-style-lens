@@ -29,7 +29,7 @@ async function ensureInjectedAndSend(tabId: number): Promise<boolean> {
   }
 }
 
-// 快捷键（§3.2：Alt+Shift+S，manifest commands 可配置）→ 进入选择模式
+// 快捷键（Alt+Shift+S，manifest commands 可配置）→ 进入选择模式
 chrome.commands.onCommand.addListener((command) => {
   if (command !== 'toggle-select') return
   void (async () => {
@@ -68,7 +68,7 @@ chrome.runtime.onMessage.addListener((message: unknown, sender, sendResponse) =>
   if (msg.type === 'STYLE_PROFILE_READY') {
     const payload = (message as { payload: StyleProfile }).payload
     ;(globalThis as Record<string, unknown>).__stylelensLastProfile = payload
-    // 编排 AI 请求（MESSAGE_PROTOCOL §5）：Content → Background → services/api → 流回 Content
+    // 编排 AI 请求：Content → Background → services/api → 流回 Content
     const tabId = sender.tab?.id
     if (tabId != null) {
       console.info('[StyleLens][Bridge] profile:received-in-background', {

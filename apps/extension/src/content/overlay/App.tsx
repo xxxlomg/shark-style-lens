@@ -3,7 +3,7 @@ import { PromptPanel } from './PromptPanel'
 import { StatusChip } from './StatusChip'
 import { useAnalysisStore, useSelectionStore } from '../state/stores'
 
-/** 浮层根组件：按模式/状态组合 UI（§47 / §48） */
+/** 浮层根组件：按模式/状态组合 UI */
 export function App() {
   const mode = useSelectionStore((s) => s.mode)
   const status = useAnalysisStore((s) => s.status)

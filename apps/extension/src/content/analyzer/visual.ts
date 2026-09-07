@@ -88,7 +88,7 @@ export function effectiveOpacityOf(el: HTMLElement): number {
   return opacity
 }
 
-/** 背景（§14）：颜色 / 渐变 / 图片 */
+/** 背景：颜色 / 渐变 / 图片 */
 export function analyzeBackground(el: HTMLElement, cs: CSSStyleDeclaration): BackgroundInfo {
   const image = cs.backgroundImage
   const color = cs.backgroundColor
@@ -127,7 +127,7 @@ function isTransparentColor(value: string): boolean {
   return value === 'transparent' || mAlpha(value) === 0
 }
 
-/** 从目标及祖先的匹配规则中找颜色 token（§10 / §14） */
+/** 从目标及祖先的匹配规则中找颜色 token */
 export function extractColorToken(el: HTMLElement, observed: string): string | undefined {
   let node: HTMLElement | null = el
   let depth = 0
@@ -160,7 +160,7 @@ export function extractColorToken(el: HTMLElement, observed: string): string | u
   return undefined
 }
 
-/** 边框（§15） */
+/** 边框 */
 export function analyzeBorder(el: HTMLElement, cs: CSSStyleDeclaration): BorderInfo | undefined {
   const side = (prefix: 'Top' | 'Right' | 'Bottom' | 'Left') => ({
     width: cs[`border${prefix}Width`],
@@ -183,7 +183,7 @@ export function analyzeBorder(el: HTMLElement, cs: CSSStyleDeclaration): BorderI
   }
 }
 
-/** 圆角（§15，逐角） */
+/** 圆角（逐角） */
 export function analyzeRadius(cs: CSSStyleDeclaration): RadiusInfo | undefined {
   const r = {
     topLeft: cs.borderTopLeftRadius,
@@ -197,7 +197,7 @@ export function analyzeRadius(cs: CSSStyleDeclaration): RadiusInfo | undefined {
   return r
 }
 
-/** 阴影（§15） */
+/** 阴影 */
 export function analyzeShadows(cs: CSSStyleDeclaration): ShadowInfo[] {
   const value = cs.boxShadow
   if (!value || value === 'none') return []

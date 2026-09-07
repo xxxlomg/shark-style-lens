@@ -3,7 +3,7 @@ import { cancelActivePrompt, clearTarget, setTargetScope, startAnalysis } from '
 import { dispatchUi } from '../state/ui-controller'
 import { controlPosition } from './control-position'
 
-/** 锁定态控制条（§4.2）：Analyze / Re-select / Element·Component 分段切换 */
+/** 锁定态控制条：Analyze / Re-select / Element·Component 分段切换 */
 export function SelectionControl({ target }: { target: SelectedElement }) {
   const { left, top } = controlPosition(target)
   const scope = target.scope

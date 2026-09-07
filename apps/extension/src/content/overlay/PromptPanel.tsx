@@ -17,7 +17,7 @@ const PHASES = [
 ] as const
 
 /**
- * 浮空结果面板（§29 / §58.3 / §64）：
+ * 浮空结果面板：
  * 初次生成锚定在控制条正下方（视觉连续、跟手）；拖拽后脱离（Floating）并记忆位置。
  * Sprint 4：流式 Prompt 渲染 + 自动滚动 + Copy + 错误重试 + Re-select。
  */
@@ -31,7 +31,7 @@ export function PromptPanel() {
   const target = useSelectionStore((s) => s.target)
   const setPosition = useOverlayStore((s) => s.setPosition)
 
-  // 渲染前同步计算初始锚定位置（控制条正下方，§58.3 跟手），
+  // 渲染前同步计算初始锚定位置（控制条正下方，跟手），
   // 避免面板先出现在 (0,0) 视口左上角再跳位（“从左边闪出”）
   const initialPos = useMemo(() => {
     if (!target) return null
@@ -71,7 +71,7 @@ export function PromptPanel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status])
 
-  // 流式自动滚动（§64.1：用户上滚后停止强制滚动）
+  // 流式自动滚动（用户上滚后停止强制滚动）
   useEffect(() => {
     const el = scrollRef.current
     if (el && followScrollRef.current) {
@@ -133,7 +133,7 @@ export function PromptPanel() {
 
   const retry = () => {
     if (!target) return
-    // error → selecting → selected → analyzing，重新分析并触发 Prompt（§4.3 重试）
+    // error → selecting → selected → analyzing，重新分析并触发 Prompt（重试）
     cancelActivePrompt()
     dispatchUi({ type: 'RE_SELECT' })
     dispatchUi({ type: 'ELEMENT_SELECTED' })
@@ -270,7 +270,7 @@ export function PromptPanel() {
         </div>
       )}
 
-      {/* 底部：流式中可立即停止上游请求；完成后可返回选择 + Copy（§64.2） */}
+      {/* 底部：流式中可立即停止上游请求；完成后可返回选择 + Copy */}
       <div className="flex items-center gap-2 border-t border-white/10 px-4 py-2.5">
         {(analyzing || streaming) && (
           <button

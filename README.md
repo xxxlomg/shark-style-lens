@@ -46,11 +46,11 @@
 
 所有模式都会先运行本地 DOM/CSS/布局解析。分析模式决定后续是否截图、是否调用 LLM：
 
-| 模式 | 处理方式 | 是否调用 LLM | 是否发送截图 |
-| --- | --- | --- | --- |
-| 模板模式 | 由本地确定性 Prompt Compiler 将解析结果回填为 Prompt | 否 | 否 |
-| 文字模型 | 将 DOM Profile 发送给文字 Agent 生成 Prompt | 是 | 否 |
-| 视觉增强 | 先由 Vision 生成结构化视觉证据，再由 Agent 生成 Prompt | 是 | 是 |
+| 模式     | 处理方式                                               | 是否调用 LLM | 是否发送截图 |
+| -------- | ------------------------------------------------------ | ------------ | ------------ |
+| 模板模式 | 由本地确定性 Prompt Compiler 将解析结果回填为 Prompt   | 否           | 否           |
+| 文字模型 | 将 DOM Profile 发送给文字 Agent 生成 Prompt            | 是           | 否           |
+| 视觉增强 | 先由 Vision 生成结构化视觉证据，再由 Agent 生成 Prompt | 是           | 是           |
 
 默认使用“视觉增强”。模板模式不需要 DeepSeek API Key；文字模型不产生或发送视觉截图；视觉增强适合追求最高视觉还原度的场景。三种模式均复用同一套 DOM/CSS 解析结果，便于比较输出差异。
 
@@ -200,3 +200,14 @@ pnpm desktop:build
 ```
 
 图标源文件位于 `apps/extension/public/stylelens-icon.svg`，扩展使用的 PNG 尺寸为 `16`、`32`、`48` 和 `128`。SVG 是主设计源，修改图标后需要重新导出这些 PNG 并重新执行构建。
+
+---
+
+## 🤝 贡献
+
+本项目由 xxxlomg 开发，仅供学习和个人使用。
+问题与建议请到[正式版入口](https://gitee.com/xxxlomg/shark-style-lens)提 Issue。
+
+## 📄 License
+
+本项目基于 **Apache License 2.0** 开源，详见根目录 [LICENSE](LICENSE)。

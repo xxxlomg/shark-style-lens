@@ -6,7 +6,7 @@ import { ProviderError } from "../providers/types";
 import { parseVisionAnalysis } from "../providers/vision-analysis";
 import { visionStreamRequestSchema } from "../schemas";
 
-/** §45.7 视觉分析请求路径：与综合推理（/api/prompt/stream）分离，绑定视觉槽位调度 */
+/** 视觉分析请求路径：与综合推理（/api/prompt/stream）分离，绑定视觉槽位调度 */
 export const visionStreamRoute = new Hono();
 
 visionStreamRoute.post("/stream", authMiddleware(), async (c) => {
@@ -49,7 +49,7 @@ visionStreamRoute.post("/stream", authMiddleware(), async (c) => {
   const { task, images, imageDetail } = parsed.data;
   const config = getModelConfig();
 
-  // §45.3 cropPolicy 预算：单次视觉调用的图像数量上限
+  // cropPolicy 预算：单次视觉调用的图像数量上限
   if (images.length > config.visionDefaults.maxImagesPerCall) {
     return c.json(
       {
@@ -80,7 +80,7 @@ visionStreamRoute.post("/stream", authMiddleware(), async (c) => {
     imageDetail: imageDetail ?? config.visionDefaults.imageDetail,
   });
 
-  // §45.5 降级：无可用视觉能力 → 显式返回，由调用方记录为 Unknown 证据（§6.5）
+  // 降级：无可用视觉能力 → 显式返回，由调用方记录为 Unknown 证据
   if (dispatch.kind === "skip") {
     console.info("[StyleLens API] model:task-skipped", {
       traceId,
@@ -136,7 +136,7 @@ visionStreamRoute.post("/stream", authMiddleware(), async (c) => {
         return;
       }
 
-      // source 区分专用视觉槽与委托路径，供基准评测关联（§45.8）
+      // source 区分专用视觉槽与委托路径，供基准评测关联
       send("vision_start", { source: dispatch.kind, traceId });
       try {
         let output = "";

@@ -80,7 +80,7 @@ function snapshotOf(
 }
 
 /**
- * DOM 采集（§7 / §59.2）：目标 + 有限祖先/兄弟/子元素，限深限宽，禁止全页扫描。
+ * DOM 采集：目标 + 有限祖先/兄弟/子元素，限深限宽，禁止全页扫描。
  */
 export function collectDom(el: HTMLElement, options: DomOptions = {}): DomCollection {
   const opts = { ...DEFAULTS, ...options }

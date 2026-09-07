@@ -115,9 +115,13 @@ export function compilePromptContext(
         ? `Viewport: ${profile.responsive.viewport.width} × ${profile.responsive.viewport.height}px; device pixel ratio: ${profile.responsive.devicePixelRatio ?? 1}.`
         : "Viewport metadata: unknown.",
       `Browser evidence: ${ledger.browserFacts.length} measured claims${profile.matchedRules?.length ? ` and ${profile.matchedRules.length} accessible matched CSS rules` : ""}.`,
+      profile.componentCapture
+        ? `Component capture: ${profile.componentCapture.capturedNodes} nodes, ${profile.componentCapture.capturedInteractiveNodes} interactive; omitted ${profile.componentCapture.omittedNodes} nodes${profile.componentCapture.truncated ? " because the capture was truncated" : ""}.`
+        : "Component capture statistics: unavailable.",
       profile.visionEvidence
         ? `Visual evidence: ${profile.visionEvidence.source} analysis, overall confidence ${Math.round(profile.visionEvidence.analysis.overallConfidence * 100)}%.`
         : "Visual evidence: unavailable; do not invent screenshot-only paint details.",
+      `Interaction evidence: ${evidencePack.interactionContracts.length} contract(s) including observed, unknown, and safety-blocked controls.`,
       "Original source code, framework identity, hidden behavior, and uncaptured interaction states are not evidence.",
       "Browser-observed facts:",
       ...ledger.browserFacts,
@@ -184,6 +188,14 @@ export function compilePromptContext(
     lines: [
       "Implement every listed observed control. Inferred action labels are hypotheses, not proof of business behavior.",
       ...interactionInventoryLines(tree),
+    ],
+  });
+
+  sections.push({
+    title: "Interaction Contracts",
+    lines: [
+      "The contracts below are the only behavior evidence captured from the source page. Implement observed transitions and preserve unknown or blocked behavior as explicitly marked.",
+      ...interactionContractLines(evidencePack.interactionContracts),
     ],
   });
 
@@ -309,6 +321,7 @@ export function compilePromptContext(
       "Verify typography family/source, size, weight, line-height, wrapping, and text density.",
       "Verify page background, foreground, surfaces, gradients, alpha, borders, radii, shadows, filters, icons, and pseudo-elements.",
       "Verify every Component Inventory item and every Interaction Inventory item is implemented; never replace observed structure with generic placeholder content or reduce a composite component to a single input or card.",
+      "Verify every observed Interaction Contract: reproduce its trigger, native/accessibility semantics, state transition, focus result, visible added/removed nodes, geometry changes, and Portal/overlay relationship. Do not invent behavior for unknown or safety-blocked contracts.",
       "Render and compare against the target crop before optimizing code structure; report unresolved unknowns and conflicts.",
     ],
   });
@@ -496,6 +509,12 @@ function treeInventoryLines(tree: LightSubtreeNode[]): string[] {
       ];
       if (node.semanticRole) bits.push(`semantic-role ${node.semanticRole}`);
       if (node.interactive) bits.push("interactive");
+      if (node.nativeRole) bits.push(`native-role ${node.nativeRole}`);
+      if (node.accessibleName)
+        bits.push(`accessible-name "${node.accessibleName}"`);
+      if (node.labelledBy) bits.push(`labelled-by ${node.labelledBy}`);
+      if (node.controls) bits.push(`controls ${node.controls}`);
+      if (node.hasPopup) bits.push(`has-popup ${node.hasPopup}`);
       if (node.visibilityState && node.visibilityState !== "visible")
         bits.push(`visibility ${node.visibilityState}`);
       if (node.effectiveOpacity !== undefined)
@@ -555,6 +574,13 @@ function interactionInventoryLines(tree: LightSubtreeNode[]): string[] {
         lines.push(
           [
             `${path}: <${node.tagName}> role:${node.roleGuess}`,
+            node.nativeRole ? `native-role ${node.nativeRole}` : "",
+            node.accessibleName
+              ? `accessible-name "${node.accessibleName}"`
+              : "",
+            node.labelledBy ? `labelled-by ${node.labelledBy}` : "",
+            node.controls ? `controls ${node.controls}` : "",
+            node.hasPopup ? `has-popup ${node.hasPopup}` : "",
             node.control ? formatControl(node.control) : "",
             node.textContent ? `label/text "${node.textContent}"` : "",
             node.actionHint ?? "",
@@ -578,6 +604,68 @@ function interactionInventoryLines(tree: LightSubtreeNode[]): string[] {
     : ["No interactive descendant was observed in the bounded tree."];
 }
 
+function interactionContractLines(
+  contracts: Array<Record<string, unknown>>,
+): string[] {
+  if (!contracts.length) return ["No interaction contract was captured."];
+
+  return contracts.map((contract) => {
+    const before = recordValue(contract.before);
+    const after = recordValue(contract.after);
+    const beforeNodes = arrayValue(before?.nodes);
+    const afterNodes = arrayValue(after?.nodes);
+    const changed = stringArrayValue(contract.changedNodeUids);
+    const overlays = stringArrayValue(contract.overlayUids);
+    const mutations = arrayValue(contract.mutations);
+    const details = [
+      `${String(contract.id ?? "interaction")}: trigger ${String(contract.triggerUid ?? "unknown")}${contract.triggerName ? ` (${String(contract.triggerName)})` : ""}; ${String(contract.event ?? "unknown")} / risk ${String(contract.risk ?? "unknown")} / status ${String(contract.status ?? "unknown")}; confidence ${Math.round(Number(contract.confidence ?? 0) * 100)}%.`,
+      `Before: ${snapshotNodeLines(beforeNodes).join("; ") || "no relevant visible nodes"}.`,
+      `After: ${snapshotNodeLines(afterNodes).join("; ") || "no relevant visible nodes"}.`,
+      `Changed nodes: ${changed.length ? changed.join(", ") : "none"}.`,
+      `Focus: ${String(contract.focusBefore ?? "none")} -> ${String(contract.focusAfter ?? "none")}.`,
+      `Visible overlays/Portal nodes: ${overlays.length ? overlays.join(", ") : "none observed"}.`,
+      `Mutations: ${mutations.length ? mutations.map((mutation) => JSON.stringify(mutation)).join("; ") : "none observed"}.`,
+      contract.observedBehavior
+        ? `Observed behavior: ${String(contract.observedBehavior)}.`
+        : "Observed behavior: none; keep this behavior unknown.",
+    ];
+    return details.join(" ");
+  });
+}
+
+function recordValue(value: unknown): Record<string, unknown> | undefined {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : undefined;
+}
+
+function arrayValue(value: unknown): unknown[] {
+  return Array.isArray(value) ? value : [];
+}
+
+function stringArrayValue(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string")
+    : [];
+}
+
+function snapshotNodeLines(nodes: unknown[]): string[] {
+  return nodes.slice(0, 12).flatMap((value) => {
+    const node = recordValue(value);
+    if (!node) return [];
+    const state = recordValue(node.state);
+    const stateText = state
+      ? Object.entries(state)
+          .filter(([, item]) => item !== undefined)
+          .map(([key, item]) => `${key}=${String(item)}`)
+          .join(",")
+      : "";
+    return [
+      `${String(node.uid ?? "unknown")} <${String(node.tagName ?? "unknown")}>${node.accessibleName ? ` name="${String(node.accessibleName)}"` : ""}${node.visible === false ? " hidden" : ""}${stateText ? ` state(${stateText})` : ""}`,
+    ];
+  });
+}
+
 function formatControl(
   control: NonNullable<LightSubtreeNode["control"]>,
 ): string {
@@ -585,10 +673,25 @@ function formatControl(
   if (control.type) details.push(`type=${control.type}`);
   if (control.placeholder) details.push(`placeholder="${control.placeholder}"`);
   if (control.title) details.push(`title="${control.title}"`);
+  if (control.name) details.push(`name="${control.name}"`);
+  if (control.required !== undefined)
+    details.push(`required=${control.required}`);
+  if (control.readOnly !== undefined)
+    details.push(`readOnly=${control.readOnly}`);
   if (control.valuePresent !== undefined)
     details.push(
       `value present=${control.valuePresent}; actual value withheld`,
     );
+  if (control.options?.length) {
+    details.push(
+      `options=${control.options
+        .map(
+          (option) =>
+            `${option.label}${option.selected ? " [selected]" : ""}${option.disabled ? " [disabled]" : ""}`,
+        )
+        .join(" | ")}`,
+    );
+  }
   return details.join(" ");
 }
 

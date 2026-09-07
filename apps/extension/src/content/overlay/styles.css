@@ -1,6 +1,6 @@
 @import 'tailwindcss';
 
-/* ---------- Shadow DOM 内细滚动条（与面板深色背景融合，§29.1） ---------- */
+/* ---------- Shadow DOM 内细滚动条（与面板深色背景融合） ---------- */
 * {
   scrollbar-width: thin;
   scrollbar-color: rgba(148, 163, 184, 0.35) transparent;

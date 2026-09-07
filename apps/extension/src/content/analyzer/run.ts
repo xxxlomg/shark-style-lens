@@ -7,7 +7,7 @@ import { buildProfile, type BuildOptions } from './profile-builder'
 
 /**
  * 分析运行器：ANALYSIS_START → 采集构建 StyleProfile → STYLE_PROFILE_READY。
- * （§68 Sprint 3 交付物：对 fixtures 生成完整 StyleProfile）
+ * （Sprint 3 交付物：对 fixtures 生成完整 StyleProfile）
  */
 export async function runAnalysis(target: SelectedElement): Promise<void> {
   const analysis = useAnalysisStore.getState()
@@ -34,7 +34,7 @@ export async function runAnalysis(target: SelectedElement): Promise<void> {
   }
 
   try {
-    const profile = buildProfile(el, { scope: target.scope, onPhase })
+    const profile = await buildProfile(el, { scope: target.scope, onPhase })
     analysis.setProfile(profile)
     analysis.setProgress(100)
 

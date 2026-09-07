@@ -61,7 +61,7 @@ export function lockElement(
   return info
 }
 
-/** 更新已锁定目标的 scope（element ↔ component，§5） */
+/** 更新已锁定目标的 scope（element ↔ component） */
 export function setTargetScope(scope: 'element' | 'component') {
   const target = useSelectionStore.getState().target
   if (!target) return

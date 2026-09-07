@@ -1,5 +1,5 @@
 /**
- * 继承分析（§9）：判断关键继承属性（font-family / color）来自直接定义、祖先继承还是系统默认。
+ * 继承分析：判断关键继承属性（font-family / color）来自直接定义、祖先继承还是系统默认。
  */
 
 export type InheritanceSource = 'direct' | 'inherited' | 'system'

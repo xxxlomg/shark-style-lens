@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-/** 后端请求体结构校验（§5.3）：完整 StyleProfile schema 在 extension 侧，后端只做结构校验 */
+/** 后端请求体结构校验：完整 StyleProfile schema 在 extension 侧，后端只做结构校验 */
 export const promptStreamRequestSchema = z.object({
   profile: z
     .object({
@@ -20,6 +20,49 @@ export const promptStreamRequestSchema = z.object({
       ),
       inferences: z.array(z.record(z.string(), z.unknown())),
       warnings: z.array(z.record(z.string(), z.unknown())),
+      componentCapture: z
+        .object({
+          capturedNodes: z.number().int().nonnegative(),
+          capturedInteractiveNodes: z.number().int().nonnegative(),
+          maxDepthReached: z.number().int().nonnegative(),
+          omittedNodes: z.number().int().nonnegative(),
+          omittedInteractiveNodes: z.number().int().nonnegative(),
+          truncated: z.boolean(),
+        })
+        .optional(),
+      interactions: z
+        .array(
+          z
+            .object({
+              id: z.string(),
+              triggerUid: z.string(),
+              triggerName: z.string().optional(),
+              event: z.enum(["click", "focus", "hover", "keydown", "change"]),
+              risk: z.enum(["safe", "review", "blocked"]),
+              status: z.enum(["observed", "unknown", "blocked"]),
+              before: z.object({
+                rootUid: z.string(),
+                focusedUid: z.string().optional(),
+                nodes: z.array(z.record(z.string(), z.unknown())),
+              }),
+              after: z.object({
+                rootUid: z.string(),
+                focusedUid: z.string().optional(),
+                nodes: z.array(z.record(z.string(), z.unknown())),
+              }),
+              mutations: z.array(z.record(z.string(), z.unknown())),
+              geometryChanges: z.array(z.record(z.string(), z.unknown())),
+              focusBefore: z.string().optional(),
+              focusAfter: z.string().optional(),
+              changedNodeUids: z.array(z.string()),
+              relatedNodeUids: z.array(z.string()),
+              overlayUids: z.array(z.string()),
+              observedBehavior: z.string().optional(),
+              confidence: z.number().min(0).max(1),
+            })
+            .passthrough(),
+        )
+        .optional(),
     })
     .passthrough(),
   images: z
@@ -132,7 +175,7 @@ export const userConfigPatchSchema = z.object({
   baseUrl: z.string().trim().min(1).max(500).optional(),
   agentModel: z.string().trim().min(1).max(200).optional(),
   visionModel: z.string().trim().min(1).max(200).optional(),
-  analysisMode: z.enum(['template', 'text', 'multimodal']).optional(),
+  analysisMode: z.enum(["template", "text", "multimodal"]).optional(),
   thinkingEnabled: z.boolean().optional(),
   reasoningEffort: z.enum(["low", "high", "max"]).optional(),
 });

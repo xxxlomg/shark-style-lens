@@ -10,7 +10,7 @@ function toJsonRect(el: HTMLElement) {
   return { width: r.width, height: r.height }
 }
 
-/** Flex 分析（§11） */
+/** Flex 分析 */
 export function analyzeFlex(el: HTMLElement, cs: CSSStyleDeclaration): FlexLayout | undefined {
   const display = cs.display
   if (display !== 'flex' && display !== 'inline-flex') return undefined
@@ -36,7 +36,7 @@ export function analyzeFlex(el: HTMLElement, cs: CSSStyleDeclaration): FlexLayou
   }
 }
 
-/** Grid 分析（§11） */
+/** Grid 分析 */
 export function analyzeGrid(el: HTMLElement, cs: CSSStyleDeclaration): GridLayout | undefined {
   if (cs.display !== 'grid' && cs.display !== 'inline-grid') return undefined
   return {
@@ -49,7 +49,7 @@ export function analyzeGrid(el: HTMLElement, cs: CSSStyleDeclaration): GridLayou
   }
 }
 
-/** 间距与盒模型（§12） */
+/** 间距与盒模型 */
 export function analyzeSpacing(el: HTMLElement, cs: CSSStyleDeclaration): SpacingProfile {
   return {
     margin: {
@@ -71,7 +71,7 @@ export function analyzeSpacing(el: HTMLElement, cs: CSSStyleDeclaration): Spacin
   }
 }
 
-/** 布局语义描述（供 Prompt Compiler 直接使用，§11） */
+/** 布局语义描述（供 Prompt Compiler 直接使用） */
 export function describeLayout(
   cs: CSSStyleDeclaration,
   flex?: FlexLayout,
@@ -99,7 +99,7 @@ export function describeLayout(
   return `The element is ${pos} in the document flow.`
 }
 
-/** 汇总 LayoutProfile（§11 / §12） */
+/** 汇总 LayoutProfile */
 export function analyzeLayout(el: HTMLElement): LayoutProfile & { spacing: SpacingProfile } {
   const cs = getComputedStyle(el)
   const flex = analyzeFlex(el, cs)

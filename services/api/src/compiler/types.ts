@@ -19,6 +19,11 @@ export interface LightSubtreeNode {
   roleGuess: string;
   semanticRole?: string;
   interactive?: boolean;
+  nativeRole?: string;
+  accessibleName?: string;
+  labelledBy?: string;
+  controls?: string;
+  hasPopup?: string;
   visibilityState?: "visible" | "opacity-zero";
   effectiveOpacity?: number;
   actionHint?: string;
@@ -37,7 +42,15 @@ export interface LightSubtreeNode {
     type?: string;
     placeholder?: string;
     title?: string;
+    name?: string;
+    required?: boolean;
+    readOnly?: boolean;
     valuePresent?: boolean;
+    options?: Array<{
+      label: string;
+      selected?: boolean;
+      disabled?: boolean;
+    }>;
   };
   rect?: { x: number; y: number; width: number; height: number };
   computed?: Record<string, string>;
@@ -191,6 +204,33 @@ export interface LightProfile {
     analysis: VisionAnalysis;
   };
   componentTree?: LightSubtreeNode[];
+  componentCapture?: {
+    capturedNodes: number;
+    capturedInteractiveNodes: number;
+    maxDepthReached: number;
+    omittedNodes: number;
+    omittedInteractiveNodes: number;
+    truncated: boolean;
+  };
+  interactions?: Array<{
+    id: string;
+    triggerUid: string;
+    triggerName?: string;
+    event: "click" | "focus" | "hover" | "keydown" | "change";
+    risk: "safe" | "review" | "blocked";
+    status: "observed" | "unknown" | "blocked";
+    before: { rootUid: string; focusedUid?: string; nodes: Array<Record<string, unknown>> };
+    after: { rootUid: string; focusedUid?: string; nodes: Array<Record<string, unknown>> };
+    mutations: Array<Record<string, unknown>>;
+    geometryChanges: Array<Record<string, unknown>>;
+    focusBefore?: string;
+    focusAfter?: string;
+    changedNodeUids: string[];
+    relatedNodeUids: string[];
+    overlayUids: string[];
+    observedBehavior?: string;
+    confidence: number;
+  }>;
   pageContext?: LightPageContext;
   facts: LightFact[];
   inferences: Array<{

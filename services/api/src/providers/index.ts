@@ -21,12 +21,12 @@ export interface ConfiguredProvider {
 export type { ModelConfig, ProviderKind, ProviderRequestLogContext, SlotConfig, VisionDispatch }
 export { createSlotProvider }
 
-/** §45 Dual-Slot Model Config Registry：从服务端 env 解析双槽位配置（含启动期不变量校验） */
+/** Dual-Slot Model Config Registry：从服务端 env 解析双槽位配置（含启动期不变量校验） */
 export function getModelConfig(): ModelConfig {
   return resolveModelConfig()
 }
 
-/** §45.5 视觉调度决策：专用视觉槽 → 委托多模态 Agent 槽 → 跳过 */
+/** 视觉调度决策：专用视觉槽 → 委托多模态 Agent 槽 → 跳过 */
 export function getVisionDispatch(): VisionDispatch {
   return resolveVisionDispatch(getModelConfig())
 }

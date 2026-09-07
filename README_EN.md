@@ -158,3 +158,7 @@ pnpm build
 ## Status
 
 The project is currently under development. Repository: <https://gitee.com/xxxlomg/shark-style-lens>.
+
+## License
+
+Licensed under the **Apache License 2.0**. See the [LICENSE](LICENSE) file for details.

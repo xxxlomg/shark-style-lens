@@ -2,7 +2,7 @@ import type { StyleFact } from '../../shared/schemas/style-profile'
 import { sanitizeCssValue } from './privacy'
 import { uidFor } from './uid'
 
-/** 高价值属性清单（§8.1 / §59.5：collect → rank；显式 none/0 也保留）。 */
+/** 高价值属性清单（collect → rank；显式 none/0 也保留）。 */
 export const KEY_PROPS = [
   'display',
   'position',
@@ -93,7 +93,7 @@ const KEEP_NEUTRAL_PROPS = new Set([
   'overflow',
 ])
 
-/** 提取目标元素的高价值 computed 属性（§8.1） */
+/** 提取目标元素的高价值 computed 属性 */
 export function extractComputedStyles(el: HTMLElement): Record<string, string> {
   const cs = getComputedStyle(el)
   const out: Record<string, string> = {}
@@ -106,7 +106,7 @@ export function extractComputedStyles(el: HTMLElement): Record<string, string> {
   return out
 }
 
-/** 生成 facts（source: computed，§60.1） */
+/** 生成 facts（source: computed） */
 export function collectComputedFacts(el: HTMLElement, targetUid: string): StyleFact[] {
   const cs = getComputedStyle(el)
   const facts: StyleFact[] = []

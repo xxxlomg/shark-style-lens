@@ -4,9 +4,9 @@ import { sanitizeAttributes, sanitizeCssValue, sanitizeText } from './privacy'
 import { uidFor } from './uid'
 import { effectiveOpacityOf } from './visual'
 
-// 限深限宽（性能/体积预算）：复杂页面只保留最有价值的子结构
-export const SUBTREE_MAX_DEPTH = 5
-export const SUBTREE_MAX_NODES = 96
+// 限深限宽（性能/体积预算）：复杂页面优先保留语义、文本和交互节点。
+export const SUBTREE_MAX_DEPTH = 8
+export const SUBTREE_MAX_NODES = 256
 
 const MAX_VALUE_LEN = 120
 
@@ -104,10 +104,22 @@ export interface SubtreeCollection {
   tree: SubtreeNode[]
   truncated: boolean
   colors: SubtreeColor[]
+  stats: {
+    capturedNodes: number
+    capturedInteractiveNodes: number
+    maxDepthReached: number
+    omittedNodes: number
+    omittedInteractiveNodes: number
+    truncated: boolean
+  }
 }
 
 interface WalkState {
   count: number
+  interactiveCount: number
+  maxDepthReached: number
+  omittedNodes: number
+  omittedInteractiveNodes: number
   truncated: boolean
 }
 
@@ -130,6 +142,93 @@ function visibilityState(effectiveOpacity: number): 'visible' | 'opacity-zero' {
 
 function hasClassMatching(el: HTMLElement, re: RegExp): boolean {
   return Array.from(el.classList).some((c) => re.test(c))
+}
+
+function nativeRoleOf(el: HTMLElement): string | undefined {
+  const explicit = el.getAttribute('role')
+  if (explicit) return explicit
+  const tag = el.tagName.toLowerCase()
+  if (tag === 'a' && el.hasAttribute('href')) return 'link'
+  if (tag === 'button' || tag === 'summary') return 'button'
+  if (tag === 'select') return 'combobox'
+  if (tag === 'textarea') return 'textbox'
+  if (tag === 'input') {
+    const type = (el.getAttribute('type') ?? 'text').toLowerCase()
+    if (type === 'checkbox') return 'checkbox'
+    if (type === 'radio') return 'radio'
+    if (type === 'range') return 'slider'
+    if (type === 'button' || type === 'submit' || type === 'reset') return 'button'
+    return 'textbox'
+  }
+  if (tag === 'option') return 'option'
+  if (tag === 'label') return 'label'
+  if (tag === 'form') return 'form'
+  if (/^h[1-6]$/.test(tag)) return 'heading'
+  if (tag === 'nav') return 'navigation'
+  if (tag === 'ul' || tag === 'ol') return 'list'
+  if (tag === 'li') return 'listitem'
+  return undefined
+}
+
+function textFromLabels(el: HTMLElement): string | undefined {
+  const labels = 'labels' in el ? (el as HTMLInputElement).labels : null
+  const text = labels
+    ? Array.from(labels)
+        .map((label) => label.textContent ?? '')
+        .join(' ')
+    : ''
+  return text.trim() ? sanitizeText(text) : undefined
+}
+
+/** Accessible names are needed for icon-only controls, but values stay redacted. */
+function accessibleNameOf(el: HTMLElement): string | undefined {
+  const ariaLabel = el.getAttribute('aria-label')
+  if (ariaLabel?.trim()) return sanitizeText(ariaLabel)
+
+  const labelledBy = el.getAttribute('aria-labelledby')
+  if (labelledBy) {
+    const text = labelledBy
+      .split(/\s+/)
+      .map((id) => el.ownerDocument.getElementById(id)?.textContent ?? '')
+      .join(' ')
+    if (text.trim()) return sanitizeText(text)
+  }
+
+  const labelledText = textFromLabels(el)
+  if (labelledText) return labelledText
+
+  const alt = el.getAttribute('alt')
+  if (alt?.trim()) return sanitizeText(alt)
+  const title = el.getAttribute('title')
+  if (title?.trim()) return sanitizeText(title)
+  const text = el.textContent?.trim()
+  return text ? sanitizeText(text) : undefined
+}
+
+function isNativeInteractiveCandidate(el: HTMLElement): boolean {
+  return el.matches(
+    'button, input, textarea, select, option, summary, a[href], [role], [contenteditable="true"], [tabindex]:not([tabindex="-1"])',
+  )
+}
+
+function priorityOf(el: HTMLElement): number {
+  if (isNativeInteractiveCandidate(el)) return 4
+  const tag = el.tagName.toLowerCase()
+  if (tag === 'label' || tag === 'form' || tag === 'fieldset' || tag === 'legend') return 3
+  if (tag === 'svg' || tag === 'img' || tag === 'canvas' || hasClassMatching(el, ICON_RE)) return 3
+  if ((el.textContent ?? '').trim()) return 2
+  return 1
+}
+
+function interactiveCountIn(el: HTMLElement): number {
+  const selector =
+    'button, input, textarea, select, option, summary, a[href], [role], [contenteditable="true"], [tabindex]:not([tabindex="-1"])'
+  return (el.matches(selector) ? 1 : 0) + el.querySelectorAll(selector).length
+}
+
+function markOmittedSubtree(el: HTMLElement, state: WalkState): void {
+  state.omittedNodes += 1 + el.querySelectorAll('*').length
+  state.omittedInteractiveNodes += interactiveCountIn(el)
 }
 
 /** roleGuess 启发式：仅作为 prompt 提示（inference 性质），不作为 facts */
@@ -159,13 +258,15 @@ function guessRole(el: HTMLElement, _cs: CSSStyleDeclaration, isLeaf: boolean): 
 }
 
 function isInteractive(el: HTMLElement, roleGuess: SubtreeRole): boolean {
+  const cs = getComputedStyle(el)
   return (
     roleGuess === 'button' ||
     roleGuess === 'input' ||
     roleGuess === 'control' ||
     roleGuess === 'link' ||
     el.isContentEditable ||
-    (el.hasAttribute('tabindex') && el.tabIndex >= 0)
+    (el.hasAttribute('tabindex') && el.tabIndex >= 0) ||
+    cs.cursor === 'pointer'
   )
 }
 
@@ -309,6 +410,15 @@ function controlOf(el: HTMLElement, roleGuess: SubtreeRole): SubtreeNode['contro
         ? Boolean((el.textContent ?? '').trim())
         : undefined
 
+  const selectOptions =
+    tag === 'select'
+      ? Array.from((el as HTMLSelectElement).options).map((option) => ({
+          label: sanitizeText(option.textContent ?? option.label),
+          selected: option.selected,
+          disabled: option.disabled,
+        }))
+      : undefined
+
   return {
     kind: tag === 'input' ? 'input' : tag === 'textarea' ? 'textarea' : tag,
     type: tag === 'input' ? (el.getAttribute('type') ?? 'text') : undefined,
@@ -316,7 +426,11 @@ function controlOf(el: HTMLElement, roleGuess: SubtreeRole): SubtreeNode['contro
       ? sanitizeText(el.getAttribute('placeholder') ?? '')
       : undefined,
     title: el.getAttribute('title') ? sanitizeText(el.getAttribute('title') ?? '') : undefined,
+    name: el.getAttribute('name') ? sanitizeText(el.getAttribute('name') ?? '') : undefined,
+    required: 'required' in el ? Boolean((el as HTMLInputElement).required) : undefined,
+    readOnly: 'readOnly' in el ? Boolean((el as HTMLInputElement).readOnly) : undefined,
     valuePresent,
+    options: selectOptions?.length ? selectOptions : undefined,
   }
 }
 
@@ -326,7 +440,14 @@ function controlOf(el: HTMLElement, roleGuess: SubtreeRole): SubtreeNode['contro
  * 同时收集颜色样本供页面调色板聚合（T2）。
  */
 export function collectSubtree(el: HTMLElement): SubtreeCollection {
-  const state: WalkState = { count: 0, truncated: false }
+  const state: WalkState = {
+    count: 0,
+    interactiveCount: 0,
+    maxDepthReached: 0,
+    omittedNodes: 0,
+    omittedInteractiveNodes: 0,
+    truncated: false,
+  }
   const colors: SubtreeColor[] = []
   const targetRect = el.getBoundingClientRect()
   const root = nodeOf(
@@ -340,7 +461,19 @@ export function collectSubtree(el: HTMLElement): SubtreeCollection {
     effectiveOpacityOf(el.parentElement ?? el),
   )
   const tree = root ? [root] : []
-  return { tree, truncated: state.truncated, colors }
+  return {
+    tree,
+    truncated: state.truncated,
+    colors,
+    stats: {
+      capturedNodes: state.count,
+      capturedInteractiveNodes: state.interactiveCount,
+      maxDepthReached: state.maxDepthReached,
+      omittedNodes: state.omittedNodes,
+      omittedInteractiveNodes: state.omittedInteractiveNodes,
+      truncated: state.truncated,
+    },
+  }
 }
 
 function walkChildren(
@@ -352,10 +485,15 @@ function walkChildren(
   ancestorOpacity = 1,
 ): SubtreeNode[] {
   const out: SubtreeNode[] = []
-  for (const [childIndex, child] of (Array.from(parent.children) as HTMLElement[]).entries()) {
+  const children = (Array.from(parent.children) as HTMLElement[])
+    .map((child, childIndex) => ({ child, childIndex, priority: priorityOf(child) }))
+    .sort((a, b) => b.priority - a.priority || a.childIndex - b.childIndex)
+
+  for (const { child, childIndex } of children) {
     if (state.count >= SUBTREE_MAX_NODES) {
       state.truncated = true
-      break
+      markOmittedSubtree(child, state)
+      continue
     }
     const node = nodeOf(
       child,
@@ -369,7 +507,8 @@ function walkChildren(
     )
     if (node) out.push(node)
   }
-  return out
+  // Budget order is priority-based, but prompt order remains the browser DOM order.
+  return out.sort((a, b) => (a.childIndex ?? 0) - (b.childIndex ?? 0))
 }
 
 function nodeOf(
@@ -386,10 +525,23 @@ function nodeOf(
   const rect = el.getBoundingClientRect()
   if (!isVisible(cs, rect)) return null
   state.count += 1
+  state.maxDepthReached = Math.max(state.maxDepthReached, depth)
   const effectiveOpacity = ancestorOpacity * opacityOf(cs)
 
   const isLeaf = el.childElementCount === 0
   const roleGuess = guessRole(el, cs, isLeaf)
+  const interactive = isInteractive(el, roleGuess)
+  if (interactive) state.interactiveCount += 1
+  const nativeRole = nativeRoleOf(el)
+  const accessibleName = accessibleNameOf(el)
+  const labelledBy = el.getAttribute('aria-labelledby') ?? undefined
+  const controls = el.getAttribute('aria-controls') ?? undefined
+  const hasPopup = el.getAttribute('aria-haspopup') ?? undefined
+  const directText = Array.from(el.childNodes)
+    .filter((child) => child.nodeType === Node.TEXT_NODE)
+    .map((child) => child.textContent ?? '')
+    .join(' ')
+    .trim()
 
   const background = backgroundOf(cs)
   const border = borderOf(cs)
@@ -418,8 +570,9 @@ function nodeOf(
     roleGuess === 'button' ||
     roleGuess === 'badge' ||
     roleGuess === 'control' ||
-    roleGuess === 'link'
-  const interactive = isInteractive(el, roleGuess)
+    roleGuess === 'link' ||
+    nativeRole === 'label' ||
+    nativeRole === 'heading'
   const node: SubtreeNode = {
     uid: uidFor(el),
     parentUid,
@@ -429,6 +582,11 @@ function nodeOf(
     roleGuess,
     semanticRole: el.getAttribute('role') ?? undefined,
     interactive,
+    nativeRole,
+    accessibleName,
+    labelledBy,
+    controls,
+    hasPopup,
     visibilityState: visibilityState(effectiveOpacity),
     effectiveOpacity: effectiveOpacity !== 1 ? effectiveOpacity : undefined,
     actionHint: actionHint(el, roleGuess),
@@ -457,7 +615,9 @@ function nodeOf(
       : undefined,
     pseudoElements: analyzePseudoElements(el),
     textContent:
-      withText && (el.textContent ?? '').trim() ? sanitizeText(el.textContent ?? '') : undefined,
+      (directText || withText) && (el.textContent ?? '').trim()
+        ? sanitizeText(directText || el.textContent || '')
+        : undefined,
     children: [],
   }
 
@@ -465,6 +625,7 @@ function nodeOf(
     node.children = walkChildren(el, depth + 1, state, colors, targetRect, effectiveOpacity)
   } else if (el.children.length > 0) {
     state.truncated = true
+    Array.from(el.children).forEach((child) => markOmittedSubtree(child as HTMLElement, state))
   }
 
   // 去掉无意义的空 background-image 等：truncate 保护已在取值处完成

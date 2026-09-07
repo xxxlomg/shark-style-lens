@@ -58,6 +58,7 @@ let preserveAdvancedSettingsOpen = false
 let configLoadPromise: Promise<void> | null = null
 let connectionBusy = false
 let toastTimer: number | null = null
+let connectionState: 'unknown' | 'connected' | 'failed' = 'unknown'
 
 function apiBase(): string {
   return `http://127.0.0.1:${apiPort}`
@@ -73,20 +74,29 @@ function escapeHtml(value: string): string {
 }
 
 function aiStatusZone(): string {
-  const configured = config?.apiKeyConfigured ?? false
+  const connected = connectionState === 'connected'
   return `
     <div class="ai-status-zone">
-      <button id="test-connection" class="connection-test-mini" type="button" aria-label="测试 AI 连通性" title="测试 AI 连通性">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M9.8 14.2a4.6 4.6 0 0 0 6.1 1.4l2.9-2.9a4.6 4.6 0 0 0-6.5-6.5l-1.5 1.5" />
-          <path d="M14.2 9.8a4.6 4.6 0 0 0-6.1-1.4l-2.9 2.9a4.6 4.6 0 0 0 6.5 6.5l1.5-1.5" />
-        </svg>
+      <button id="test-connection" class="connection-test-mini" data-ai-only type="button" aria-label="测试 AI 连通性" title="测试 AI 连通性">
+        <span>测试</span>
       </button>
-      <span class="state-capsule ${configured ? 'is-ready' : 'is-pending'}">
+      <span id="connection-state" class="state-capsule ${connected ? 'is-ready' : 'is-pending'}" data-ai-only hidden>
         <span class="state-led" aria-hidden="true"></span>
-        <span>${configured ? 'AI 已连接' : '需要配置'}</span>
+        <span data-connection-label>${connected ? 'AI 已连接' : 'AI 未连接'}</span>
       </span>
     </div>`
+}
+
+function syncConnectionIndicator() {
+  const indicator = document.querySelector<HTMLElement>('#connection-state')
+  if (!indicator) return
+  const selectedMode = document.querySelector<HTMLInputElement>('input[name="analysis-mode"]:checked')?.value
+  const connected = connectionState === 'connected'
+  indicator.hidden = selectedMode === 'template' || connectionState === 'unknown'
+  indicator.classList.toggle('is-ready', connected)
+  indicator.classList.toggle('is-pending', !connected)
+  const label = indicator.querySelector<HTMLElement>('[data-connection-label]')
+  if (label) label.textContent = connected ? 'AI 已连接' : 'AI 未连接'
 }
 
 function showToast(message: string, tone: 'success' | 'error' = 'success') {
@@ -271,17 +281,17 @@ function render(state: 'loading' | 'ready' | 'error', message = '') {
           <fieldset class="mode-field">
             <legend>分析模式</legend>
             <div class="mode-options">
-              <label class="mode-option ${config.analysisMode === 'template' ? 'is-selected' : ''}">
+              <label class="mode-option ${config.analysisMode === 'template' ? 'is-selected' : ''}" title="模板模式：仅解析，不调用模型">
                 <input type="radio" name="analysis-mode" value="template" ${config.analysisMode === 'template' ? 'checked' : ''} />
-                <span><b>模板模式</b><small>仅解析，不调用模型</small></span>
+                <span><b>模板模式</b></span>
               </label>
-              <label class="mode-option ${config.analysisMode === 'text' ? 'is-selected' : ''}">
+              <label class="mode-option ${config.analysisMode === 'text' ? 'is-selected' : ''}" title="文字模型：不发送截图">
                 <input type="radio" name="analysis-mode" value="text" ${config.analysisMode === 'text' ? 'checked' : ''} />
-                <span><b>文字模型</b><small>不发送截图</small></span>
+                <span><b>文字模型</b></span>
               </label>
-              <label class="mode-option ${config.analysisMode === 'multimodal' ? 'is-selected' : ''}">
+              <label class="mode-option ${config.analysisMode === 'multimodal' ? 'is-selected' : ''}" title="视觉增强：Agent + Vision">
                 <input type="radio" name="analysis-mode" value="multimodal" ${config.analysisMode === 'multimodal' ? 'checked' : ''} />
-                <span><b>视觉增强</b><small>Agent + Vision</small></span>
+                <span><b>视觉增强</b></span>
               </label>
             </div>
           </fieldset>
@@ -313,8 +323,8 @@ function render(state: 'loading' | 'ready' | 'error', message = '') {
           </div>
           <button class="extension-action" id="open-extension-download" type="button"><span>打开</span></button>
         </section>
+        <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
       </section>
-      <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
     </main>`
 
   bindWindowControls()
@@ -333,9 +343,16 @@ function render(state: 'loading' | 'ready' | 'error', message = '') {
       if (templateMode) thinking.checked = false
     }
     if (effort) effort.disabled = templateMode || !(thinking?.checked ?? false)
+    document.querySelectorAll<HTMLElement>('[data-ai-only]').forEach((element) => {
+      element.hidden = templateMode
+    })
+    syncConnectionIndicator()
   }
   document.querySelectorAll<HTMLInputElement>('input[name="analysis-mode"]').forEach((input) => {
-    input.addEventListener('change', syncAnalysisModeUi)
+    input.addEventListener('change', () => {
+      connectionState = 'unknown'
+      syncAnalysisModeUi()
+    })
   })
   document.querySelector<HTMLInputElement>('#thinking-mode')?.addEventListener('change', (event) => {
     const input = event.currentTarget as HTMLInputElement
@@ -392,6 +409,7 @@ async function loadConfig() {
 }
 
 async function loadConfigOnce() {
+  connectionState = 'unknown'
   render('loading')
   let lastError = '本地 API 未启动'
   for (let attempt = 0; attempt < 30; attempt += 1) {
@@ -454,6 +472,7 @@ async function saveConfig() {
       throw new Error('本地服务未确认思考模式设置，请重新构建并启动 StyleLens。')
     }
     config = savedConfig
+    connectionState = 'unknown'
     preserveAdvancedSettingsOpen = false
     render('ready')
     showToast('已保存')
@@ -466,21 +485,32 @@ async function saveConfig() {
 }
 
 async function testConnection() {
-  if (!config || connectionBusy) return
+  const selectedMode = document.querySelector<HTMLInputElement>('input[name="analysis-mode"]:checked')?.value
+  if (!config || connectionBusy || selectedMode === 'template') return
+  const testedMode = selectedMode
   const button = document.querySelector<HTMLButtonElement>('#test-connection')
   connectionBusy = true
   if (button) button.disabled = true
   try {
     const health = await apiRequest<HealthResponse>('/api/health?probe=1')
     const connection = health.connection
-    if (connection?.ok) {
-      showToast(connection.kind === 'template' ? '模板模式已就绪，无需 AI 连接' : 'AI 连接正常')
+    if (document.querySelector<HTMLInputElement>('input[name="analysis-mode"]:checked')?.value !== testedMode) return
+    const aiReachable = connection?.ok === true && connection.kind === 'deepseek'
+    connectionState = aiReachable ? 'connected' : 'failed'
+    syncConnectionIndicator()
+    if (aiReachable) {
+      showToast('AI 连接正常')
+    } else if (connection?.kind === 'template') {
+      showToast('请先保存 AI 模式，再测试连接', 'error')
     } else if (health.configured) {
       showToast('本地服务正常，但 AI 端点未连通', 'error')
     } else {
       showToast('本地服务正常，请先配置 API Key', 'error')
     }
   } catch (error) {
+    if (document.querySelector<HTMLInputElement>('input[name="analysis-mode"]:checked')?.value !== testedMode) return
+    connectionState = 'failed'
+    syncConnectionIndicator()
     showToast(error instanceof Error ? error.message : '连通性测试失败', 'error')
   } finally {
     connectionBusy = false

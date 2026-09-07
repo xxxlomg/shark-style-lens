@@ -23,6 +23,7 @@ import { analyzeTypography } from './typography'
 import { uidFor } from './uid'
 import { analyzeVisual, extractColorToken } from './visual'
 import { sanitizeAttributes, sanitizeText } from './privacy'
+import { collectInteractionEvidence } from './interaction'
 
 export const STYLE_PROFILE_VERSION = '0.1.0'
 
@@ -100,10 +101,10 @@ export interface BuildOptions {
 }
 
 /**
- * 构建 StyleProfile（§23 / §60）：
+ * 构建 StyleProfile：
  * DOM + CSS + Layout + Context 采集 → facts / inferences 分类 → Zod 校验。
  */
-export function buildProfile(el: HTMLElement, options: BuildOptions): StyleProfile {
+export async function buildProfile(el: HTMLElement, options: BuildOptions): Promise<StyleProfile> {
   options.onPhase?.('preparing', 10)
 
   const selectedUid = uidFor(el)
@@ -169,6 +170,9 @@ export function buildProfile(el: HTMLElement, options: BuildOptions): StyleProfi
   const pageContext = analyzePageContext([...targetColors, ...subtree.colors])
   const cssom = inspectCssom(analysisRoot, [...CSSOM_PROPS])
 
+  options.onPhase?.('observing-interactions', 88)
+  const interactions = await collectInteractionEvidence(analysisRoot)
+
   const boundary = componentRoot
     ? {
         kind: componentRoot.kind,
@@ -233,7 +237,7 @@ export function buildProfile(el: HTMLElement, options: BuildOptions): StyleProfi
 
   options.onPhase?.('building-profile', 95)
 
-  // ---- Facts（观察事实，§60.1） ----
+  // ---- Facts（观察事实） ----
   const mergedFacts = dedupeFacts([
     ...facts,
     ...cssom.rules
@@ -248,7 +252,7 @@ export function buildProfile(el: HTMLElement, options: BuildOptions): StyleProfi
       })),
   ])
 
-  // ---- Inferences（推断，必须带证据，§60.1） ----
+  // ---- Inferences（推断，必须带证据） ----
   const inferences: Inference[] = []
   if (boundary) {
     inferences.push({
@@ -309,6 +313,8 @@ export function buildProfile(el: HTMLElement, options: BuildOptions): StyleProfi
     matchedRules: cssom.rules,
     cssVariables: cssom.variables,
     componentTree: subtree.tree,
+    componentCapture: subtree.stats,
+    interactions,
     pageContext,
     warnings: [...dom.warnings, ...cssom.warnings],
   }
@@ -322,7 +328,7 @@ export function buildProfile(el: HTMLElement, options: BuildOptions): StyleProfi
   if (subtree.truncated) {
     profile.warnings.push({
       code: 'TREE_TRUNCATED',
-      message: `Subtree collection truncated (max nodes ${SUBTREE_MAX_NODES})`,
+      message: `Subtree collection truncated at ${subtree.stats.capturedNodes}/${SUBTREE_MAX_NODES} nodes; omitted ${subtree.stats.omittedNodes} nodes (${subtree.stats.omittedInteractiveNodes} interactive).`,
       severity: 'info',
     })
   }
@@ -330,7 +336,7 @@ export function buildProfile(el: HTMLElement, options: BuildOptions): StyleProfi
   return profile
 }
 
-/** 按 property+targetUid 去重（后到优先，§59.5） */
+/** 按 property+targetUid 去重（后到优先） */
 function dedupeFacts(facts: StyleFact[]): StyleFact[] {
   const seen = new Map<string, StyleFact>()
   for (const fact of facts) {

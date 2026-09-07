@@ -1,7 +1,7 @@
 import type { TypographyProfile } from '../../shared/schemas/style-profile'
 import { detectFontSource } from './inheritance'
 
-/** 排版语义角色（§13：不只要数值，还要语义） */
+/** 排版语义角色（不只要数值，还要语义） */
 export function inferTypographyRole(el: HTMLElement, cs: CSSStyleDeclaration): string | undefined {
   const tag = el.tagName.toLowerCase()
   if (['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(tag)) return 'primary-heading'

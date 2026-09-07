@@ -1,5 +1,5 @@
 /**
- * 数据脱敏（§7 / §39 / §65.2）—— 采集层唯一入口，之后任何字段都不得含敏感原文。
+ * 数据脱敏 —— 采集层唯一入口，之后任何字段都不得含敏感原文。
  */
 
 const MAX_TEXT = 120
@@ -11,7 +11,7 @@ const URL_TOKEN_RE =
 const SENSITIVE_VISIBLE_TEXT_RE =
   /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}|\+?\d[\d\s-]{7,}\d|(?:[?&](?:token|key|secret|auth|api[_-]?key|password|access[_-]?token|signature|code)=)[^&\s]*/i
 
-/** 文本限长 + 明显 PII 过滤（§7） */
+/** 文本限长 + 明显 PII 过滤 */
 export function sanitizeText(text: string): string {
   let t = text
     .replace(EMAIL_RE, '[email]')
@@ -44,11 +44,10 @@ export function sanitizeReferenceUrl(value: string): string {
   }
 }
 
-/** 永不采集的 attribute 名（input value / 密码 / 敏感 aria） */
+/** 永不采集的 attribute 名（input value / 密码 / 可能回显用户输入的 aria） */
 const NEVER_ATTRS = new Set([
   'value',
   'password',
-  'aria-label',
   'aria-valuetext',
   'data-testid', // 可保留，但属实现细节；MVP 保留
 ])
@@ -63,5 +62,5 @@ export function sanitizeAttributes(attrs: Record<string, string>): Record<string
   return out
 }
 
-/** 永远不发送的清单（供单测锁定，§65.2） */
+/** 永远不发送的清单（供单测锁定） */
 export const NEVER_SEND_ATTRS = [...NEVER_ATTRS]

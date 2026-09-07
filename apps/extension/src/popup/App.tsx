@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { BrandMark } from '../shared/BrandMark'
 import { getSaveCaptures, setSaveCaptures } from '../shared/capture-settings'
 
-/** Popup：极简入口（§34 / §57.3）—— MVP 只做「开始选择」 */
+/** Popup：极简入口 —— MVP 只做「开始选择」 */
 export function App() {
   const [saveCaptures, setSaveCapturesState] = useState(false)
   const [captureSettingsReady, setCaptureSettingsReady] = useState(false)

@@ -97,7 +97,7 @@ function mount() {
   }
 }
 
-// 消息路由（§3.1）：SELECTION_START（Popup/快捷键）+ Prompt 流回执
+// 消息路由：SELECTION_START（Popup/快捷键）+ Prompt 流回执
 chrome.runtime.onMessage.addListener((message: unknown, _sender, sendResponse) => {
   const parsed = extensionMessageSchema.safeParse(message)
   if (!parsed.success) return

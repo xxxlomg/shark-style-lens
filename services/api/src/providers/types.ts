@@ -1,4 +1,4 @@
-/** Provider 抽象（§70.1 / §44 AI 层）：模型无关，Extension 与 UI 不感知具体 provider */
+/** Provider 抽象（AI 层）：模型无关，Extension 与 UI 不感知具体 provider */
 
 export interface CompiledContext {
   /** 渲染成人类可读的 markdown（mock / 调试用） */
@@ -41,7 +41,7 @@ export interface ProviderOptions {
   detail?: "compact" | "balanced" | "detailed";
 }
 
-/** §45 视觉请求契约：images 为 base64 data URL，仅允许发往具备视觉能力的槽位 */
+/** 视觉请求契约：images 为 base64 data URL，仅允许发往具备视觉能力的槽位 */
 export interface VisionRequest {
   task: string;
   /** Legacy string inputs remain accepted; labeled image objects are preferred. */

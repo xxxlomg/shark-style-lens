@@ -2,7 +2,7 @@ import type { PseudoElementInfo } from '../../shared/schemas/style-profile'
 import { sanitizeCssValue, sanitizeText } from './privacy'
 import { makeColorInfo } from './visual'
 
-/** 伪元素分析（§16）：::before / ::after（icon / 装饰线 / badge / overlay 等） */
+/** 伪元素分析：::before / ::after（icon / 装饰线 / badge / overlay 等） */
 export function analyzePseudoElements(el: HTMLElement): PseudoElementInfo[] {
   const out: PseudoElementInfo[] = []
   for (const pseudo of ['::before', '::after'] as const) {

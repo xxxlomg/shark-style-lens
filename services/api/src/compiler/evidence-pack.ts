@@ -59,6 +59,9 @@ export interface EvidencePack {
   inferences: EvidenceClaim[];
   componentInventory: Array<Record<string, unknown>>;
   interactionInventory: Array<Record<string, unknown>>;
+  interactionClaims: EvidenceClaim[];
+  interactionContracts: Array<Record<string, unknown>>;
+  componentCapture?: Record<string, unknown>;
   conflicts: EvidenceConflict[];
   unknowns: string[];
   warnings: Array<Record<string, unknown>>;
@@ -124,6 +127,9 @@ export const evidencePackSchema = z.object({
   inferences: z.array(evidenceClaimSchema),
   componentInventory: z.array(z.record(z.string(), z.unknown())),
   interactionInventory: z.array(z.record(z.string(), z.unknown())),
+  interactionClaims: z.array(evidenceClaimSchema),
+  interactionContracts: z.array(z.record(z.string(), z.unknown())),
+  componentCapture: z.record(z.string(), z.unknown()).optional(),
   conflicts: z.array(evidenceConflictSchema),
   unknowns: z.array(z.string()),
   warnings: z.array(z.record(z.string(), z.unknown())),
@@ -179,6 +185,11 @@ function inventory(
       tagName: node.tagName,
       role: node.semanticRole || node.roleGuess,
       interactive: Boolean(node.interactive),
+      nativeRole: node.nativeRole,
+      accessibleName: node.accessibleName,
+      labelledBy: node.labelledBy,
+      controls: node.controls,
+      hasPopup: node.hasPopup,
       visibilityState: node.visibilityState,
       effectiveOpacity: node.effectiveOpacity,
       state: node.state,
@@ -214,14 +225,70 @@ function interactionInventory(
         item.interactive === true ||
         ["button", "input", "control", "link"].includes(String(item.role)),
     )
-    .map(({ path, uid, role, state, rect }) => ({
-      path,
-      uid,
-      role,
-      state,
-      rect,
-      source: "browser-fact",
+    .map((item) => ({
+      path: item.path,
+      uid: item.uid,
+      role: item.role,
+      nativeRole: item.nativeRole,
+      accessibleName: item.accessibleName,
+      labelledBy: item.labelledBy,
+      controls: item.controls,
+      hasPopup: item.hasPopup,
+      interactive: item.interactive,
+      actionHint: item.actionHint,
+      control: item.control,
+      attributes: item.attributes,
+      textContent: item.textContent,
+      state: item.state,
+      rect: item.rect,
+      source: "browser-dom",
     }));
+}
+
+function snapshotSubset(
+  snapshot: NonNullable<LightProfile["interactions"]>[number]["before"],
+  relevantUids: Set<string>,
+): Record<string, unknown> {
+  const selectedUids = new Set(relevantUids);
+  selectedUids.add(snapshot.rootUid);
+  return {
+    rootUid: snapshot.rootUid,
+    focusedUid: snapshot.focusedUid,
+    nodes: snapshot.nodes.filter((node) => selectedUids.has(String(node.uid))),
+  };
+}
+
+function buildInteractionContracts(
+  interactions: LightProfile["interactions"],
+): Array<Record<string, unknown>> {
+  return array(interactions).map((interaction) => {
+    const relevantUids = new Set([
+      interaction.triggerUid,
+      ...interaction.changedNodeUids,
+      ...interaction.relatedNodeUids,
+      ...interaction.overlayUids,
+    ]);
+    return {
+      id: interaction.id,
+      triggerUid: interaction.triggerUid,
+      triggerName: interaction.triggerName,
+      event: interaction.event,
+      risk: interaction.risk,
+      status: interaction.status,
+      before: snapshotSubset(interaction.before, relevantUids),
+      after: snapshotSubset(interaction.after, relevantUids),
+      mutations: interaction.mutations,
+      geometryChanges: interaction.geometryChanges,
+      focusBefore: interaction.focusBefore,
+      focusAfter: interaction.focusAfter,
+      changedNodeUids: interaction.changedNodeUids,
+      relatedNodeUids: interaction.relatedNodeUids,
+      overlayUids: interaction.overlayUids,
+      observedBehavior: interaction.observedBehavior,
+      confidence: interaction.confidence,
+      source: "browser-interaction-observation",
+    };
+  });
 }
 
 const PROPERTY_ALIASES: Record<string, string[]> = {
@@ -564,6 +631,19 @@ export function buildEvidencePack(profile: LightProfile): EvidencePack {
 
   const componentInventory = inventory(profile.componentTree ?? []);
   const interactionItems = interactionInventory(componentInventory);
+  const interactionContracts = buildInteractionContracts(profile.interactions);
+  const interactionClaims = interactionContracts.map((contract, index) =>
+    claim(
+      `interaction-${index + 1}`,
+      String(contract.triggerUid ?? targetUid),
+      "interaction-contract",
+      contract,
+      "browser-interaction",
+      contract.status === "observed" ? "observed" : "unknown",
+      contract.confidence,
+      [`interaction:${String(contract.id ?? index + 1)}`],
+    ),
+  );
   const derivedConstraints = [
     claim(
       "derived-responsive",
@@ -610,7 +690,24 @@ export function buildEvidencePack(profile: LightProfile): EvidencePack {
     ...array(profile.states)
       .filter((state) => !state.captured)
       .map((state) => `${state.state} state was not captured`),
+    ...array(profile.interactions)
+      .filter((interaction) => interaction.status === "unknown")
+      .map(
+        (interaction) =>
+          `Interaction ${interaction.triggerName ?? interaction.triggerUid} was not observed; do not invent its resulting behavior.`,
+      ),
+    ...array(profile.interactions)
+      .filter((interaction) => interaction.status === "blocked")
+      .map(
+        (interaction) =>
+          `Interaction ${interaction.triggerName ?? interaction.triggerUid} was intentionally not triggered because it was high risk.`,
+      ),
   ];
+  if (profile.componentCapture?.truncated) {
+    unknowns.push(
+      `Component tree is truncated after ${profile.componentCapture.capturedNodes} nodes; ${profile.componentCapture.omittedNodes} nodes (${profile.componentCapture.omittedInteractiveNodes} interactive) were omitted.`,
+    );
+  }
   array(vision?.consistencyChecks)
     .filter((check) => {
       const checked = checkedBrowserValue(profile, check);
@@ -650,6 +747,7 @@ export function buildEvidencePack(profile: LightProfile): EvidencePack {
         assets: profile.assets ?? [],
         responsive: profile.responsive ?? {},
         pageContext: profile.pageContext ?? {},
+        componentCapture: profile.componentCapture ?? {},
       },
     },
     claims: [
@@ -657,6 +755,7 @@ export function buildEvidencePack(profile: LightProfile): EvidencePack {
       ...visualObservations,
       ...derivedConstraints,
       ...inferences,
+      ...interactionClaims,
     ],
     browserFacts,
     visualObservations,
@@ -664,6 +763,9 @@ export function buildEvidencePack(profile: LightProfile): EvidencePack {
     inferences,
     componentInventory,
     interactionInventory: interactionItems,
+    interactionClaims,
+    interactionContracts,
+    componentCapture: profile.componentCapture,
     conflicts,
     unknowns: [...new Set(unknowns)],
     warnings: array(profile.warnings) as Array<Record<string, unknown>>,

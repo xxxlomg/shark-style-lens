@@ -221,7 +221,7 @@ export function resolveComponentRoot(el: HTMLElement, maxDepth = 6): ComponentRo
   }
 }
 
-/** Component Boundary 推断（§6 / §59.3）：信号评分，输出候选而非结论 */
+/** Component Boundary 推断：信号评分，输出候选而非结论 */
 export function inferBoundary(el: HTMLElement, maxDepth = 4): ComponentInference | undefined {
   const candidates: BoundaryCandidate[] = []
   let node: HTMLElement | null = el.parentElement
@@ -304,7 +304,7 @@ export function inferBoundary(el: HTMLElement, maxDepth = 4): ComponentInference
   }
 }
 
-/** 外层布局上下文（§6.2）：祖先中最近的布局容器/语义区域（近 → 远） */
+/** 外层布局上下文：祖先中最近的布局容器/语义区域（近 → 远） */
 export function collectOuterLayoutContext(el: HTMLElement, max = 3): string[] {
   const out: string[] = []
   let node: HTMLElement | null = el.parentElement
@@ -318,7 +318,7 @@ export function collectOuterLayoutContext(el: HTMLElement, max = 3): string[] {
   return out
 }
 
-/** Theme / Responsive 上下文（§21 / §22）；page 为 T2 页面主题检测结果，优先于 prefers-color-scheme */
+/** Theme / Responsive 上下文；page 为 T2 页面主题检测结果，优先于 prefers-color-scheme */
 export function analyzeThemeResponsive(page?: PageContext): ResponsiveProfile {
   const dark = window.matchMedia('(prefers-color-scheme: dark)').matches
   const root = getComputedStyle(document.documentElement)

@@ -437,9 +437,31 @@ export const subtreeControlSchema = z.object({
   type: z.string().optional(),
   placeholder: z.string().optional(),
   title: z.string().optional(),
+  name: z.string().optional(),
+  required: z.boolean().optional(),
+  readOnly: z.boolean().optional(),
   valuePresent: z.boolean().optional(),
+  options: z
+    .array(
+      z.object({
+        label: z.string(),
+        selected: z.boolean().optional(),
+        disabled: z.boolean().optional(),
+      }),
+    )
+    .optional(),
 })
 export type SubtreeControl = z.infer<typeof subtreeControlSchema>
+
+export const subtreeCaptureStatsSchema = z.object({
+  capturedNodes: z.number().int().nonnegative(),
+  capturedInteractiveNodes: z.number().int().nonnegative(),
+  maxDepthReached: z.number().int().nonnegative(),
+  omittedNodes: z.number().int().nonnegative(),
+  omittedInteractiveNodes: z.number().int().nonnegative(),
+  truncated: z.boolean(),
+})
+export type SubtreeCaptureStats = z.infer<typeof subtreeCaptureStatsSchema>
 
 export interface SubtreeNode {
   uid: string
@@ -450,6 +472,11 @@ export interface SubtreeNode {
   roleGuess: SubtreeRole
   semanticRole?: string
   interactive?: boolean
+  nativeRole?: string
+  accessibleName?: string
+  labelledBy?: string
+  controls?: string
+  hasPopup?: string
   visibilityState?: 'visible' | 'opacity-zero'
   effectiveOpacity?: number
   actionHint?: string
@@ -480,6 +507,11 @@ export const subtreeNodeSchema: z.ZodType<SubtreeNode> = z.lazy(() =>
     roleGuess: subtreeRoleSchema,
     semanticRole: z.string().optional(),
     interactive: z.boolean().optional(),
+    nativeRole: z.string().optional(),
+    accessibleName: z.string().optional(),
+    labelledBy: z.string().optional(),
+    controls: z.string().optional(),
+    hasPopup: z.string().optional(),
     visibilityState: z.enum(['visible', 'opacity-zero']).optional(),
     effectiveOpacity: z.number().min(0).max(1).optional(),
     actionHint: z.string().optional(),
@@ -500,6 +532,75 @@ export const subtreeNodeSchema: z.ZodType<SubtreeNode> = z.lazy(() =>
     children: z.array(subtreeNodeSchema),
   }),
 )
+
+export const interactionEventSchema = z.enum(['click', 'focus', 'hover', 'keydown', 'change'])
+export type InteractionEvent = z.infer<typeof interactionEventSchema>
+
+export const interactionRiskSchema = z.enum(['safe', 'review', 'blocked'])
+export type InteractionRisk = z.infer<typeof interactionRiskSchema>
+
+export const interactionStatusSchema = z.enum(['observed', 'unknown', 'blocked'])
+export type InteractionStatus = z.infer<typeof interactionStatusSchema>
+
+const interactionNodeSnapshotSchema = z.object({
+  uid: z.string(),
+  tagName: z.string(),
+  roleGuess: subtreeRoleSchema.optional(),
+  nativeRole: z.string().optional(),
+  accessibleName: z.string().optional(),
+  labelledBy: z.string().optional(),
+  controls: z.string().optional(),
+  hasPopup: z.string().optional(),
+  textContent: z.string().optional(),
+  rect: subtreeRectSchema.optional(),
+  visible: z.boolean(),
+  state: subtreeStateSchema.optional(),
+  attributes: z.record(z.string(), z.string()).optional(),
+})
+
+export const interactionSnapshotSchema = z.object({
+  rootUid: z.string(),
+  focusedUid: z.string().optional(),
+  nodes: z.array(interactionNodeSnapshotSchema),
+})
+export type InteractionSnapshot = z.infer<typeof interactionSnapshotSchema>
+
+export const interactionMutationSchema = z.object({
+  type: z.enum(['childList', 'attributes', 'characterData']),
+  targetUid: z.string().optional(),
+  addedUids: z.array(z.string()).optional(),
+  removedUids: z.array(z.string()).optional(),
+  attributeNames: z.array(z.string()).optional(),
+})
+export type InteractionMutation = z.infer<typeof interactionMutationSchema>
+
+export const interactionGeometryChangeSchema = z.object({
+  uid: z.string(),
+  before: subtreeRectSchema.optional(),
+  after: subtreeRectSchema.optional(),
+})
+export type InteractionGeometryChange = z.infer<typeof interactionGeometryChangeSchema>
+
+export const interactionEvidenceSchema = z.object({
+  id: z.string(),
+  triggerUid: z.string(),
+  triggerName: z.string().optional(),
+  event: interactionEventSchema,
+  risk: interactionRiskSchema,
+  status: interactionStatusSchema,
+  before: interactionSnapshotSchema,
+  after: interactionSnapshotSchema,
+  mutations: z.array(interactionMutationSchema),
+  geometryChanges: z.array(interactionGeometryChangeSchema),
+  focusBefore: z.string().optional(),
+  focusAfter: z.string().optional(),
+  changedNodeUids: z.array(z.string()),
+  relatedNodeUids: z.array(z.string()),
+  overlayUids: z.array(z.string()),
+  observedBehavior: z.string().optional(),
+  confidence: z.number().min(0).max(1),
+})
+export type InteractionEvidence = z.infer<typeof interactionEvidenceSchema>
 
 /* ---------- 17. PageContext（页面主题与调色板，保真度提升 T2） ---------- */
 
@@ -558,6 +659,8 @@ export const styleProfileSchema = z.object({
   cssVariables: z.array(cssVariableUsageSchema).optional(),
   visionEvidence: visionEvidenceSchema.optional(),
   componentTree: z.array(subtreeNodeSchema).optional(),
+  componentCapture: subtreeCaptureStatsSchema.optional(),
+  interactions: z.array(interactionEvidenceSchema).optional(),
   pageContext: pageContextSchema.optional(),
   warnings: z.array(analysisWarningSchema),
 })
