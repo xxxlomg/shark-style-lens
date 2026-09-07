@@ -7,9 +7,8 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build:web": "vite build",
-    "build:api": "node scripts/build-api-sidecar.mjs",
     "stage:resources": "node scripts/stage-resources.mjs",
-    "build:bundle": "pnpm --filter @stylelens/extension build && pnpm build:web && pnpm build:api && pnpm stage:resources",
+    "build:bundle": "pnpm --filter @stylelens/extension build && pnpm build:web && pnpm stage:resources",
     "build": "pnpm build:bundle",
     "tauri": "tauri",
     "tauri:dev": "pnpm build:bundle && tauri dev --no-watch",
@@ -20,7 +19,6 @@
     "@tauri-apps/api": "^2.11.0",
     "@tauri-apps/cli": "^2.11.4",
     "@types/node": "^24.13.3",
-    "@yao-pkg/pkg": "^6.22.0",
     "esbuild": "^0.28.2",
     "typescript": "~6.0.3",
     "vite": "^8.2.2"

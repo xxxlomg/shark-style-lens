@@ -1,43 +1,34 @@
-use std::sync::{Arc, Mutex};
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
+use std::sync::Mutex;
+use stylelens_desktop::{ApiServer, ApiService, ApiSettings, DEFAULT_API_PORT, DEFAULT_API_SECRET};
 use tauri::{
     menu::{Menu, MenuItem, PredefinedMenuItem},
-    path::BaseDirectory,
     tray::{MouseButton, TrayIconBuilder, TrayIconEvent},
     Manager, RunEvent, State, WindowEvent,
 };
-use tauri_plugin_shell::{process::CommandEvent, ShellExt};
+use tauri_plugin_shell::ShellExt;
 
 const GITEE_URL: &str = "https://gitee.com/xxxlomg/shark-style-lens.git";
 const GITHUB_URL: &str = "https://github.com/xxxlomg/shark-style-lens";
 
-struct ApiProcess {
-    child: Mutex<Option<tauri_plugin_shell::process::CommandChild>>,
-    port: Arc<Mutex<Option<u16>>>,
+struct ApiRuntime {
+    server: Mutex<Option<ApiServer>>,
+    port: u16,
 }
 
 #[tauri::command]
-fn get_api_port(state: State<'_, ApiProcess>) -> Result<u16, String> {
-    state
-        .port
-        .lock()
-        .map_err(|_| "API sidecar state is unavailable".to_string())?
-        .ok_or_else(|| "API sidecar is still starting".to_string())
+fn get_api_port(state: State<'_, ApiRuntime>) -> Result<u16, String> {
+    Ok(state.port)
 }
 
 #[tauri::command]
 fn open_extension_install_page(
     app: tauri::AppHandle,
-    state: State<'_, ApiProcess>,
+    state: State<'_, ApiRuntime>,
 ) -> Result<(), String> {
-    let port = state
-        .port
-        .lock()
-        .map_err(|_| "API sidecar state is unavailable".to_string())?
-        .ok_or_else(|| "API sidecar is still starting".to_string())?;
-    let install_page = format!("http://127.0.0.1:{port}/");
+    let install_page = format!("http://127.0.0.1:{}/", state.port);
 
-    // Hand the ZIP download to a normal browser where attachment downloads
-    // are visible and reliable for users.
     #[allow(deprecated)]
     app.shell()
         .open(install_page, None)
@@ -61,12 +52,11 @@ fn open_github_page(app: tauri::AppHandle) -> Result<(), String> {
 }
 
 fn stop_api(app: &tauri::AppHandle) {
-    let state = app.state::<ApiProcess>();
-    if let Ok(mut process) = state.child.lock() {
-        if let Some(child) = process.take() {
-            let _ = child.kill();
-        }
-    };
+    let state = app.state::<ApiRuntime>();
+    let server = state.server.lock().ok().and_then(|mut value| value.take());
+    if let Some(server) = server {
+        let _ = tauri::async_runtime::block_on(server.shutdown());
+    }
 }
 
 fn show_main_window(app: &tauri::AppHandle) {
@@ -80,9 +70,9 @@ fn show_main_window(app: &tauri::AppHandle) {
 fn main() {
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
-        .manage(ApiProcess {
-            child: Mutex::new(None),
-            port: Arc::new(Mutex::new(None)),
+        .manage(ApiRuntime {
+            server: Mutex::new(None),
+            port: DEFAULT_API_PORT,
         })
         .invoke_handler(tauri::generate_handler![
             get_api_port,
@@ -121,54 +111,19 @@ fn main() {
                 })
                 .build(app)?;
 
-            let public_dir = app
-                .path()
-                .resolve("resources/stylelens-public", BaseDirectory::Resource)
-                .expect("unable to resolve StyleLens public resources");
-            let (mut events, child) = app
-                .shell()
-                .sidecar("stylelens-api")
-                .expect("StyleLens API sidecar is not bundled")
-                // The browser extension has no Tauri bridge, so the local API
-                // needs one stable loopback port for config and analysis calls.
-                .env("PORT", "3001")
-                .env("STYLELENS_API_SECRET", "stylelens-dev")
-                .env("STYLELENS_ENV_FILE", "")
-                .env("STYLELENS_CONFIG_ONLY", "1")
-                .env(
-                    "STYLELENS_PUBLIC_DIR",
-                    public_dir.to_string_lossy().as_ref(),
-                )
-                .spawn()
-                .expect("unable to start StyleLens API sidecar");
-
-            if let Ok(mut process) = app.state::<ApiProcess>().child.lock() {
-                *process = Some(child);
+            let settings = ApiSettings::from_env()
+                .with_port(DEFAULT_API_PORT)
+                .with_secret(DEFAULT_API_SECRET)
+                .with_embedded_public(true);
+            let server = tauri::async_runtime::block_on(ApiService::new(settings).start())
+                .expect("unable to start the embedded StyleLens API");
+            let port = server.local_addr().port();
+            if let Ok(mut state) = app.state::<ApiRuntime>().server.lock() {
+                *state = Some(server);
+            } else {
+                panic!("embedded StyleLens API state is unavailable");
             }
-
-            let api_state = app.state::<ApiProcess>().inner().port.clone();
-            tauri::async_runtime::spawn(async move {
-                while let Some(event) = events.recv().await {
-                    match event {
-                        CommandEvent::Stdout(bytes) => {
-                            let output = String::from_utf8_lossy(&bytes);
-                            if let Some(port) = parse_api_port(&output) {
-                                if let Ok(mut value) = api_state.lock() {
-                                    *value = Some(port);
-                                }
-                            }
-                            println!("[StyleLens API] {output}");
-                        }
-                        CommandEvent::Error(error) => {
-                            eprintln!("[StyleLens API] sidecar error: {error}")
-                        }
-                        CommandEvent::Terminated(payload) => {
-                            eprintln!("[StyleLens API] sidecar exited: {payload:?}")
-                        }
-                        _ => {}
-                    }
-                }
-            });
+            assert_eq!(port, DEFAULT_API_PORT);
             Ok(())
         })
         .on_window_event(|window, event| {
@@ -185,15 +140,4 @@ fn main() {
             stop_api(app_handle);
         }
     });
-}
-
-fn parse_api_port(output: &str) -> Option<u16> {
-    let marker = "http://127.0.0.1:";
-    let start = output.find(marker)? + marker.len();
-    let digits: String = output[start..]
-        .chars()
-        .take_while(|character| character.is_ascii_digit())
-        .collect();
-    let port = digits.parse::<u16>().ok()?;
-    (port > 0).then_some(port)
 }
